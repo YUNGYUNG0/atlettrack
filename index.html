@@ -74,16 +74,10 @@ tr:last-child td{border-bottom:none}
     <div style="font-size:13px;color:var(--color-text-secondary);margin-bottom:1.25rem">Sledování výkonnosti atletů</div>
     <div id="login-alert"></div>
     <label>Uživatelské jméno</label>
-    <input type="text" id="login-user" placeholder="trener nebo jan">
+    <input type="text" id="login-user" placeholder="Jméno">
     <label>Heslo</label>
-    <input type="password" id="login-pass" placeholder="heslo">
+    <input type="password" id="login-pass" placeholder="Heslo">
     <button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:14px" onclick="doLogin()">Přihlásit se</button>
-    <div class="demo-box">
-      <strong style="display:block;margin-bottom:3px">Demo přístupy:</strong>
-      Admin: <code>admin</code> / <code>admin123</code><br>
-      Trenér: <code>trener</code> / <code>heslo123</code><br>
-      Svěřenec: <code>jan</code> / <code>jan123</code> &nbsp;|&nbsp; <code>petra</code> / <code>petra123</code>
-    </div>
   </div>
 </div>
 
@@ -628,10 +622,6 @@ function renderResults(){
   const types=[...new Set(myRecs.map(r=>r.type))];
   document.getElementById('av-results').innerHTML=`
     <div class="card">
-      <div class="stat-grid">
-        <div class="stat-card"><div class="stat-val">${myRecs.length}</div><div class="stat-lbl">Záznamy</div></div>
-        <div class="stat-card"><div class="stat-val">${types.length}</div><div class="stat-lbl">Disciplíny</div></div>
-      </div>
       <div style="display:flex;align-items:flex-end;gap:8px;flex-wrap:wrap;margin-bottom:12px">
         <div>
           <label style="margin-top:0">Disciplína</label>
