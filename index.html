@@ -397,33 +397,24 @@ function renderAddForm(){
         </div>
       </div>
       <label>Pokusy / hodnoty</label>
-      <div class="attempts-box">
+      <div class="attempts-box" id="attempts-box">
         <div id="attempts-inputs">
-          <div class="attempt-row"><span class="attempt-num">1.</span><input type="number" step="0.01" class="attempt-val" placeholder="0.00"></div>
+          ${attemptRowHTML(1,'coach')}
         </div>
         <div style="display:flex;gap:8px;margin-top:8px">
           <button class="btn btn-sm" onclick="addAttempt()">+ Přidat pokus</button>
           <button class="btn btn-sm btn-danger" onclick="removeAttempt()" id="btn-remove-att" style="display:none">- Odebrat</button>
         </div>
       </div>
+      <div style="margin-top:14px;border-top:1.5px solid #e8eaed;padding-top:14px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+          <div style="font-size:13px;font-weight:600;color:#444">Metriky celé aktivity</div>
+          <button class="btn btn-sm" onclick="addSessionMetric('coach')">+ Přidat metriku</button>
+        </div>
+        <div id="session-metrics-coach"></div>
+      </div>
       <label>Poznámka (volitelně)</label>
       <textarea id="f-note" rows="2" placeholder="5x200m, podmínky, komentář..."></textarea>
-      ${(D.metricTypes&&D.metricTypes.length)?`
-      <div style="margin-top:14px;border-top:1.5px solid #e8eaed;padding-top:14px">
-        <div style="font-size:13px;font-weight:600;margin-bottom:8px;color:#444">Doplňkové metriky (volitelně)</div>
-        <div id="metrics-rows">${D.metricTypes.map(mt=>`
-          <div style="margin-bottom:8px">
-            <label style="margin-top:0;margin-bottom:4px">${mt.name} (${mt.unit})</label>
-            <div style="display:flex;gap:6px;align-items:center">
-              <input type="number" step="any" class="metric-val" data-metric-id="${mt.id}" data-metric-name="${mt.name}" data-metric-unit="${mt.unit}" placeholder="hodnota" style="max-width:130px">
-              <select class="metric-scope" data-metric-id="${mt.id}" style="width:auto;min-width:160px;font-size:12px">
-                <option value="session">Celá aktivita</option>
-                <option value="per_attempt">Per pokus (průměr)</option>
-              </select>
-            </div>
-          </div>`).join('')}
-        </div>
-      </div>`:''}
       <div style="display:flex;gap:8px;margin-top:14px">
         <button class="btn btn-primary" onclick="saveRec()">Uložit výkon</button>
         <button class="btn" onclick="renderAddForm()">Vymazat</button>
@@ -432,13 +423,122 @@ function renderAddForm(){
   fillUnit();
 }
 
+function attemptRowHTML(num, prefix){
+  const metricOpts=D.metricTypes&&D.metricTypes.length
+    ? `<option value="">— vyber metriku —</option>${D.metricTypes.map(m=>`<option value="${m.id}" data-name="${m.name}" data-unit="${m.unit}">${m.name} (${m.unit})</option>`).join('')}<option value="__new__">+ Nová metrika…</option>`
+    : `<option value="__new__">+ Nová metrika…</option>`;
+  return `<div class="attempt-row" id="${prefix}-attempt-row-${num}">
+    <span class="attempt-num">${num}.</span>
+    <input type="number" step="0.01" class="attempt-val" placeholder="0.00" style="max-width:120px">
+    <button class="btn btn-sm" style="margin-left:4px;font-size:11px;padding:4px 8px" onclick="addAttemptMetric('${prefix}',${num})">+ metrika</button>
+    <div id="${prefix}-attempt-metrics-${num}" style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px;width:100%"></div>
+  </div>`;
+}
+
+function addAttemptMetric(prefix, num){
+  const container=document.getElementById(`${prefix}-attempt-metrics-${num}`);
+  const mid='am-'+Date.now();
+  const metricOpts=D.metricTypes&&D.metricTypes.length
+    ? `<option value="">— vyber —</option>${D.metricTypes.map(m=>`<option value="${m.id}" data-name="${m.name}" data-unit="${m.unit}">${m.name} (${m.unit})</option>`).join('')}<option value="__new__">+ Nová…</option>`
+    : `<option value="__new__">+ Nová metrika…</option>`;
+  const div=document.createElement('div');
+  div.style.cssText='display:flex;gap:4px;align-items:center;margin-top:4px;flex-wrap:wrap;width:100%;background:#f8f9fa;border:1px solid #e0e0e0;border-radius:6px;padding:6px';
+  div.id=mid;
+  div.innerHTML=`
+    <select style="width:auto;min-width:150px;font-size:12px" onchange="onAttemptMetricSelect(this,'${mid}')">
+      ${metricOpts}
+    </select>
+    <input type="number" step="any" placeholder="hodnota" style="width:90px;font-size:12px" class="am-val" data-attempt="${num}" data-prefix="${prefix}">
+    <span class="am-unit" style="font-size:11px;color:#666"></span>
+    <button class="btn btn-sm btn-danger" style="padding:3px 7px;font-size:11px" onclick="document.getElementById('${mid}').remove()">×</button>`;
+  container.appendChild(div);
+}
+
+function onAttemptMetricSelect(sel, mid){
+  const div=document.getElementById(mid);
+  if(sel.value==='__new__'){
+    const name=prompt('Název metriky (např. Laktát):');
+    if(!name){sel.value='';return;}
+    const unit=prompt('Jednotka (např. mmol):');
+    if(!unit){sel.value='';return;}
+    const id='mt-'+name.toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,'')+'-'+Date.now();
+    if(!D.metricTypes) D.metricTypes=[];
+    D.metricTypes.push({id,name,unit});
+    // save to supabase async
+    sbInsert('metric_types',{id,name,unit}).catch(e=>console.warn('metric save:',e));
+    // add option to all selects
+    document.querySelectorAll('select[onchange^="onAttemptMetricSelect"], select[onchange^="onSessionMetricSelect"]').forEach(s=>{
+      const newOpt=new Option(`${name} (${unit})`,id);
+      newOpt.dataset.name=name; newOpt.dataset.unit=unit;
+      s.insertBefore(newOpt, s.querySelector('option[value="__new__"]'));
+      if(s===sel) s.value=id;
+    });
+    div.querySelector('.am-unit').textContent=unit;
+    div.querySelector('select').dataset.metricId=id;
+    div.querySelector('select').dataset.metricName=name;
+    div.querySelector('select').dataset.metricUnit=unit;
+  } else if(sel.value){
+    const opt=sel.options[sel.selectedIndex];
+    div.querySelector('.am-unit').textContent=opt.dataset.unit||'';
+    sel.dataset.metricId=sel.value;
+    sel.dataset.metricName=opt.dataset.name||opt.text;
+    sel.dataset.metricUnit=opt.dataset.unit||'';
+  }
+}
+
+function addSessionMetric(prefix){
+  const container=document.getElementById(`session-metrics-${prefix}`);
+  const mid='sm-'+Date.now();
+  const metricOpts=D.metricTypes&&D.metricTypes.length
+    ? `<option value="">— vyber —</option>${D.metricTypes.map(m=>`<option value="${m.id}" data-name="${m.name}" data-unit="${m.unit}">${m.name} (${m.unit})</option>`).join('')}<option value="__new__">+ Nová…</option>`
+    : `<option value="__new__">+ Nová metrika…</option>`;
+  const div=document.createElement('div');
+  div.id=mid;
+  div.style.cssText='display:flex;gap:6px;align-items:center;margin-bottom:6px;flex-wrap:wrap;background:#f8f9fa;border:1px solid #e0e0e0;border-radius:6px;padding:6px';
+  div.innerHTML=`
+    <select style="width:auto;min-width:150px;font-size:12px" onchange="onSessionMetricSelect(this,'${mid}')">
+      ${metricOpts}
+    </select>
+    <input type="number" step="any" placeholder="hodnota" style="width:100px;font-size:12px" class="sm-val">
+    <span class="sm-unit" style="font-size:11px;color:#666"></span>
+    <button class="btn btn-sm btn-danger" style="padding:3px 7px;font-size:11px" onclick="document.getElementById('${mid}').remove()">×</button>`;
+  container.appendChild(div);
+}
+
+function onSessionMetricSelect(sel, mid){
+  const div=document.getElementById(mid);
+  if(sel.value==='__new__'){
+    const name=prompt('Název metriky (např. Laktát):');
+    if(!name){sel.value='';return;}
+    const unit=prompt('Jednotka (např. mmol):');
+    if(!unit){sel.value='';return;}
+    const id='mt-'+name.toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,'')+'-'+Date.now();
+    if(!D.metricTypes) D.metricTypes=[];
+    D.metricTypes.push({id,name,unit});
+    sbInsert('metric_types',{id,name,unit}).catch(e=>console.warn('metric save:',e));
+    document.querySelectorAll('select[onchange^="onAttemptMetricSelect"], select[onchange^="onSessionMetricSelect"]').forEach(s=>{
+      const newOpt=new Option(`${name} (${unit})`,id);
+      newOpt.dataset.name=name; newOpt.dataset.unit=unit;
+      s.insertBefore(newOpt, s.querySelector('option[value="__new__"]'));
+      if(s===sel) s.value=id;
+    });
+    div.querySelector('.sm-unit').textContent=unit;
+    sel.dataset.metricId=id; sel.dataset.metricName=name; sel.dataset.metricUnit=unit;
+  } else if(sel.value){
+    const opt=sel.options[sel.selectedIndex];
+    div.querySelector('.sm-unit').textContent=opt.dataset.unit||'';
+    sel.dataset.metricId=sel.value;
+    sel.dataset.metricName=opt.dataset.name||opt.text;
+    sel.dataset.metricUnit=opt.dataset.unit||'';
+  }
+}
+
 function addAttempt(){
   attemptCount++;
   const box=document.getElementById('attempts-inputs');
-  const row=document.createElement('div');
-  row.className='attempt-row';
-  row.innerHTML=`<span class="attempt-num">${attemptCount}.</span><input type="number" step="0.01" class="attempt-val" placeholder="0.00">`;
-  box.appendChild(row);
+  const div=document.createElement('div');
+  div.innerHTML=attemptRowHTML(attemptCount,'coach');
+  box.appendChild(div.firstElementChild);
   document.getElementById('btn-remove-att').style.display=attemptCount>1?'':'none';
 }
 
@@ -463,7 +563,7 @@ async function saveRec(){
   const type=document.getElementById('f-type').value;
   const unit=document.getElementById('f-unit').value.trim();
   const note=document.getElementById('f-note').value.trim();
-  const inputs=document.querySelectorAll('.attempt-val');
+  const inputs=document.querySelectorAll('#cv-add .attempt-val');
   const attempts=[];
   inputs.forEach(inp=>{ const v=parseFloat(inp.value); if(!isNaN(v)) attempts.push(v); });
   const aa=document.getElementById('add-alert');
@@ -471,14 +571,22 @@ async function saveRec(){
     aa.innerHTML='<div class="alert alert-r">Vyplňte všechna povinná pole a alespoň jeden pokus</div>'; return;
   }
   aa.innerHTML='<div class="alert" style="background:#E6F1FB;color:#0C447C;border:0.5px solid #185FA5">Ukládám…</div>';
-  // collect metrics
+  // collect attempt metrics
   const metrics=[];
-  document.querySelectorAll('.metric-val').forEach(inp=>{
+  document.querySelectorAll('.am-val').forEach(inp=>{
     const v=parseFloat(inp.value);
-    if(!isNaN(v)){
-      const scope=document.querySelector(`.metric-scope[data-metric-id="${inp.dataset.metricId}"]`);
-      metrics.push({id:inp.dataset.metricId,name:inp.dataset.metricName,unit:inp.dataset.metricUnit,value:v,scope:scope?scope.value:'session'});
-    }
+    if(isNaN(v)) return;
+    const sel=inp.closest('div').querySelector('select');
+    if(!sel||!sel.dataset.metricId) return;
+    metrics.push({id:sel.dataset.metricId,name:sel.dataset.metricName,unit:sel.dataset.metricUnit,value:v,scope:'per_attempt',attempt:parseInt(inp.dataset.attempt)||1});
+  });
+  // collect session metrics
+  document.querySelectorAll('.sm-val').forEach(inp=>{
+    const v=parseFloat(inp.value);
+    if(isNaN(v)) return;
+    const sel=inp.closest('div').querySelector('select');
+    if(!sel||!sel.dataset.metricId) return;
+    metrics.push({id:sel.dataset.metricId,name:sel.dataset.metricName,unit:sel.dataset.metricUnit,value:v,scope:'session'});
   });
   const rec={id:'r'+Date.now(),ath,type,attempts,unit,date,note,metrics};
   try{
@@ -951,30 +1059,22 @@ function renderAthleteAddForm(){
       <label>Pokusy / hodnoty</label>
       <div class="attempts-box">
         <div id="ath-attempts-inputs">
-          <div class="attempt-row"><span class="attempt-num">1.</span><input type="number" step="0.01" class="ath-attempt-val" placeholder="0.00"></div>
+          ${attemptRowHTML(1,'ath')}
         </div>
         <div style="display:flex;gap:8px;margin-top:8px">
           <button class="btn btn-sm" onclick="athAddAttempt()">+ Přidat pokus</button>
           <button class="btn btn-sm btn-danger" onclick="athRemoveAttempt()" id="ath-btn-remove" style="display:none">- Odebrat</button>
         </div>
       </div>
+      <div style="margin-top:14px;border-top:1.5px solid #e8eaed;padding-top:14px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+          <div style="font-size:13px;font-weight:600;color:#444">Metriky celé aktivity</div>
+          <button class="btn btn-sm" onclick="addSessionMetric('ath')">+ Přidat metriku</button>
+        </div>
+        <div id="session-metrics-ath"></div>
+      </div>
       <label>Poznámka (volitelně)</label>
       <textarea id="af-note" rows="2" placeholder="Komentář, podmínky..."></textarea>
-      ${(D.metricTypes&&D.metricTypes.length)?`
-      <div style="margin-top:14px;border-top:1.5px solid #e8eaed;padding-top:14px">
-        <div style="font-size:13px;font-weight:600;margin-bottom:8px;color:#444">Doplňkové metriky (volitelně)</div>
-        ${D.metricTypes.map(mt=>`
-          <div style="margin-bottom:8px">
-            <label style="margin-top:0;margin-bottom:4px">${mt.name} (${mt.unit})</label>
-            <div style="display:flex;gap:6px;align-items:center">
-              <input type="number" step="any" class="ath-metric-val" data-metric-id="${mt.id}" data-metric-name="${mt.name}" data-metric-unit="${mt.unit}" placeholder="hodnota" style="max-width:130px">
-              <select class="ath-metric-scope" data-metric-id="${mt.id}" style="width:auto;min-width:160px;font-size:12px">
-                <option value="session">Celá aktivita</option>
-                <option value="per_attempt">Per pokus (průměr)</option>
-              </select>
-            </div>
-          </div>`).join('')}
-      </div>`:''}
       <div style="display:flex;gap:8px;margin-top:14px">
         <button class="btn btn-primary" onclick="athSaveRec()">Uložit výkon</button>
         <button class="btn" onclick="renderAthleteAddForm()">Vymazat</button>
@@ -993,10 +1093,9 @@ function athFillUnit(){
 function athAddAttempt(){
   athAttemptCount++;
   const box=document.getElementById('ath-attempts-inputs');
-  const row=document.createElement('div');
-  row.className='attempt-row';
-  row.innerHTML=`<span class="attempt-num">${athAttemptCount}.</span><input type="number" step="0.01" class="ath-attempt-val" placeholder="0.00">`;
-  box.appendChild(row);
+  const div=document.createElement('div');
+  div.innerHTML=attemptRowHTML(athAttemptCount,'ath');
+  box.appendChild(div.firstElementChild);
   document.getElementById('ath-btn-remove').style.display=athAttemptCount>1?'':'none';
 }
 
@@ -1013,7 +1112,7 @@ async function athSaveRec(){
   const type=document.getElementById('af-type').value;
   const unit=document.getElementById('af-unit').value.trim();
   const note=document.getElementById('af-note').value.trim();
-  const inputs=document.querySelectorAll('.ath-attempt-val');
+  const inputs=document.querySelectorAll('#av-addperf .attempt-val');
   const attempts=[];
   inputs.forEach(inp=>{ const v=parseFloat(inp.value); if(!isNaN(v)) attempts.push(v); });
   const aa=document.getElementById('ath-add-alert');
@@ -1022,12 +1121,19 @@ async function athSaveRec(){
   }
   aa.innerHTML='<div class="alert" style="background:#E6F1FB;color:#0C447C;border:0.5px solid #185FA5">Ukládám…</div>';
   const ath_metrics=[];
-  document.querySelectorAll('.ath-metric-val').forEach(inp=>{
+  document.querySelectorAll('#av-addperf .am-val').forEach(inp=>{
     const v=parseFloat(inp.value);
-    if(!isNaN(v)){
-      const scope=document.querySelector(`.ath-metric-scope[data-metric-id="${inp.dataset.metricId}"]`);
-      ath_metrics.push({id:inp.dataset.metricId,name:inp.dataset.metricName,unit:inp.dataset.metricUnit,value:v,scope:scope?scope.value:'session'});
-    }
+    if(isNaN(v)) return;
+    const sel=inp.closest('div').querySelector('select');
+    if(!sel||!sel.dataset.metricId) return;
+    ath_metrics.push({id:sel.dataset.metricId,name:sel.dataset.metricName,unit:sel.dataset.metricUnit,value:v,scope:'per_attempt',attempt:parseInt(inp.dataset.attempt)||1});
+  });
+  document.querySelectorAll('#av-addperf .sm-val').forEach(inp=>{
+    const v=parseFloat(inp.value);
+    if(isNaN(v)) return;
+    const sel=inp.closest('div').querySelector('select');
+    if(!sel||!sel.dataset.metricId) return;
+    ath_metrics.push({id:sel.dataset.metricId,name:sel.dataset.metricName,unit:sel.dataset.metricUnit,value:v,scope:'session'});
   });
   const rec={id:'r'+Date.now(),ath:CU.id,type,attempts,unit,date,note,metrics:ath_metrics};
   try{
