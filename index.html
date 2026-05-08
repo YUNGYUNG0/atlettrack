@@ -297,22 +297,25 @@ function attemptsHTML(rec, mode){
   });
   const allMetricNames=[...new Set((rec.metrics||[]).filter(me=>me.scope==='per_attempt').map(me=>me.name))];
   // build grid: col0=num, col1=value, col2..N=metric columns
-  const cols=['#','Výkon',...allMetricNames];
-  const headerRow=`<tr style="border-bottom:1.5px solid #d0d5dd">${cols.map(c=>`<th style="text-align:left;padding:3px 10px 3px 0;font-size:11px;color:#666;font-weight:600;white-space:nowrap">${c}</th>`).join('')}</tr>`;
   const dataRows=rec.attempts.map((v,i)=>{
     const ai=i+1;
     const mets=perAttemptMetrics[ai]||[];
     const metricsByName={};
     mets.forEach(me=>{ metricsByName[me.name]=me; });
-    const metCols=allMetricNames.map(mn=>{
+    const metParts=allMetricNames.map(mn=>{
       const me=metricsByName[mn];
       return me
-        ? `<td style="padding:3px 10px 3px 0;font-size:12px;white-space:nowrap"><span style="background:#eef4fb;border:1px solid #bfdbfe;border-radius:4px;padding:1px 6px;color:#1e40af">${me.value} ${me.unit}</span></td>`
-        : `<td style="padding:3px 10px 3px 0;font-size:12px;color:#aaa;white-space:nowrap">${mn}: —</td>`;
+        ? `<span style="font-size:11px;background:#eef4fb;border:1px solid #bfdbfe;border-radius:4px;padding:1px 6px;color:#1e40af;margin-left:6px"><b>${mn}:</b> ${me.value} ${me.unit}</span>`
+        : `<span style="font-size:11px;color:#bbb;margin-left:6px">${mn}: —</span>`;
     }).join('');
-    return `<tr><td style="padding:3px 10px 3px 0;font-size:12px;color:#666;white-space:nowrap">${ai}.</td><td style="padding:3px 10px 3px 0;font-size:12px;white-space:nowrap"><strong>${v} ${rec.unit}</strong></td>${metCols}</tr>`;
+    const isLast=i===rec.attempts.length-1;
+    return `<div style="display:flex;align-items:center;padding:4px 0;${isLast?'':'border-bottom:1px solid #e8eaed'}">
+      <span style="font-size:12px;color:#888;min-width:20px">${ai}.</span>
+      <strong style="font-size:13px;min-width:70px">${v} ${rec.unit}</strong>
+      ${metParts}
+    </div>`;
   }).join('');
-  return `<table style="border-collapse:collapse;font-size:12px"><thead>${headerRow}</thead><tbody>${dataRows}</tbody></table>`;
+  return `<div>${dataRows}</div>`;
 }
 
 // ── Confirm modal ──────────────────────────────────────────
@@ -1008,7 +1011,7 @@ function drawChart(){
   if(!typeId) return;
   const recs=D.records.filter(r=>r.ath===CU.id&&r.type===typeId).sort((a,b)=>a.date.localeCompare(b.date));
   const m=mt(typeId);
-  const vals=recs.map(r=>mode==='avg'?parseFloat(avg(r).toFixed(3)):best(r));
+  const vals=recs.map(r=>mode==='avg'?avg(r):best(r));
   if(perfChart){perfChart.destroy();perfChart=null;}
   const ctx=document.getElementById('perf-chart').getContext('2d');
   perfChart=new Chart(ctx,{
@@ -1021,15 +1024,56 @@ function drawChart(){
         borderColor:'#185FA5',
         backgroundColor:'rgba(24,95,165,0.07)',
         pointBackgroundColor:'#185FA5',
-        pointRadius:5,pointHoverRadius:7,
+        pointRadius:6,pointHoverRadius:8,
         tension:0.3,fill:true,borderWidth:2
       }]
     },
     options:{
       responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`${c.parsed.y} ${recs[c.dataIndex]?.unit||''}`}}},
+      plugins:{
+        legend:{display:false},
+        tooltip:{
+          callbacks:{
+            title:(items)=>{
+              const r=recs[items[0].dataIndex];
+              return fd(r.date);
+            },
+            label:(c)=>{
+              const r=recs[c.dataIndex];
+              const lines=[];
+              // show all attempts, highlight the one used
+              r.attempts.forEach((v,i)=>{
+                const isHighlighted=(mode==='best'&&v===best(r))||(mode==='avg');
+                const prefix=isHighlighted&&mode==='best'?'▶ ':'  ';
+                lines.push(`${prefix}Pokus ${i+1}: ${v} ${r.unit}`);
+              });
+              if(mode==='avg') lines.push(`─── Průměr: ${avg(r)} ${r.unit}`);
+              // session metrics
+              const sessionMets=(r.metrics||[]).filter(me=>me.scope==='session');
+              if(sessionMets.length){
+                lines.push('');
+                sessionMets.forEach(me=>lines.push(`${me.name}: ${me.value} ${me.unit}`));
+              }
+              return lines;
+            }
+          }
+        }
+      },
       scales:{
-        y:{grid:{color:'rgba(128,128,128,0.1)'},ticks:{font:{size:11}}},
+        y:{
+          grid:{color:'rgba(128,128,128,0.1)'},
+          ticks:{
+            font:{size:11},
+            // show exact value ticks for each data point
+            callback:(v)=>v
+          },
+          afterBuildTicks:(axis)=>{
+            // inject exact data values as ticks
+            const extra=vals.map(v=>({value:v}));
+            axis.ticks=[...new Map([...axis.ticks,...extra].map(t=>[t.value,t])).values()]
+              .sort((a,b)=>a.value-b.value);
+          }
+        },
         x:{grid:{display:false},ticks:{font:{size:11}}}
       }
     }
@@ -1099,15 +1143,41 @@ function drawCoachChart(){
         borderColor:'#185FA5',
         backgroundColor:'rgba(24,95,165,0.07)',
         pointBackgroundColor:'#185FA5',
-        pointRadius:5,pointHoverRadius:7,
+        pointRadius:6,pointHoverRadius:8,
         tension:0.3,fill:true,borderWidth:2
       }]
     },
     options:{
       responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`${c.parsed.y} ${recs[c.dataIndex]?.unit||''}`}}},
+      plugins:{
+        legend:{display:false},
+        tooltip:{
+          callbacks:{
+            title:(items)=>{ const r=recs[items[0].dataIndex]; return fd(r.date); },
+            label:(c)=>{
+              const r=recs[c.dataIndex];
+              const lines=[];
+              r.attempts.forEach((v,i)=>{
+                const isHL=(mode==='best'&&v===best(r));
+                lines.push(`${isHL?'▶ ':'  '}Pokus ${i+1}: ${v} ${r.unit}`);
+              });
+              if(mode==='avg') lines.push(`─── Průměr: ${avg(r)} ${r.unit}`);
+              const sessionMets=(r.metrics||[]).filter(me=>me.scope==='session');
+              if(sessionMets.length){ lines.push(''); sessionMets.forEach(me=>lines.push(`${me.name}: ${me.value} ${me.unit}`)); }
+              return lines;
+            }
+          }
+        }
+      },
       scales:{
-        y:{grid:{color:'rgba(128,128,128,0.1)'},ticks:{font:{size:11}}},
+        y:{
+          grid:{color:'rgba(128,128,128,0.1)'},
+          ticks:{font:{size:11}},
+          afterBuildTicks:(axis)=>{
+            const extra=vals.map(v=>({value:v}));
+            axis.ticks=[...new Map([...axis.ticks,...extra].map(t=>[t.value,t])).values()].sort((a,b)=>a.value-b.value);
+          }
+        },
         x:{grid:{display:false},ticks:{font:{size:11}}}
       }
     }
