@@ -276,11 +276,31 @@ function aTab(name){
 
 function attemptsHTML(rec, mode){
   const b=best(rec), a=avg(rec);
-  const m=mt(rec.type);
   if(rec.attempts.length===1) return `<strong>${fmtVal(rec.attempts[0],rec.unit)}</strong>`;
   if(mode==='best') return `<strong>${fmtVal(b,rec.unit)}</strong> <span class="badge b-amber">nejlepší</span>`;
   if(mode==='avg') return `<strong>${fmtVal(a,rec.unit)}</strong> <span class="badge b-teal">průměr</span>`;
-  return `<span class="attempts-detail">${rec.attempts.map((v,i)=>`${i+1}: ${v}`).join(' | ')}</span>`;
+  // 'all' mode - per attempt rows with metrics
+  const perAttemptMetrics={}; // {attemptNum: [{name,value,unit}]}
+  (rec.metrics||[]).filter(me=>me.scope==='per_attempt').forEach(me=>{
+    const ai=(me.attempt||1);
+    if(!perAttemptMetrics[ai]) perAttemptMetrics[ai]=[];
+    perAttemptMetrics[ai].push(me);
+  });
+  // collect all metric names used across all attempts
+  const allMetricNames=[...new Set((rec.metrics||[]).filter(me=>me.scope==='per_attempt').map(me=>me.name))];
+  return `<div style="font-size:12px">${rec.attempts.map((v,i)=>{
+    const ai=i+1;
+    const mets=perAttemptMetrics[ai]||[];
+    const metricsByName={};
+    mets.forEach(me=>{ metricsByName[me.name]=me; });
+    const metCols=allMetricNames.map(mn=>{
+      const me=metricsByName[mn];
+      return me
+        ? `<span style="font-size:11px;background:#eef4fb;border:1px solid #bfdbfe;border-radius:4px;padding:1px 5px;color:#1e40af;margin-left:4px"><b>${mn}:</b> ${me.value} ${me.unit}</span>`
+        : `<span style="font-size:11px;color:#aaa;margin-left:4px">${mn}: —</span>`;
+    }).join('');
+    return `<div style="padding:2px 0;border-bottom:1px solid #f0f0f0"><span style="color:#666;min-width:18px;display:inline-block">${ai}.</span> <strong>${v} ${rec.unit}</strong>${metCols}</div>`;
+  }).join('')}</div>`;
 }
 
 // ── Confirm modal ──────────────────────────────────────────
@@ -341,10 +361,12 @@ function renderDashTable(){
   const el=document.getElementById('dash-table');
   if(!recs.length){ el.innerHTML='<div class="empty">Žádné záznamy</div>'; return; }
   el.innerHTML=`<div style="overflow-x:auto"><table>
-    <thead><tr><th>Datum</th><th>Svěřenec</th><th>Disciplína</th><th>Opak.</th><th>Výkon</th><th></th></tr></thead>
+    <thead><tr><th>Datum</th><th>Svěřenec</th><th>Disciplína</th><th>Opak.</th><th>Výkon</th><th>Poznámka</th><th></th></tr></thead>
     <tbody>${recs.map(r=>{
       const a=au(r.ath), m=mt(r.type);
       const ini=(a?a.name:'?').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+      const sessionMets=(r.metrics||[]).filter(me=>me.scope==='session');
+      const sessionHTML=sessionMets.length?sessionMets.map(me=>`<span style="display:inline-block;margin-right:4px;font-size:11px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:4px;padding:2px 6px;color:#166534"><b>${me.name}:</b> ${me.value} ${me.unit}</span>`).join(''):'';
       return `<tr>
         <td>${fd(r.date)}</td>
         <td><div style="display:flex;align-items:center;gap:6px">
@@ -352,8 +374,12 @@ function renderDashTable(){
           ${a?a.name:r.ath}
         </div></td>
         <td><span class="badge b-blue">${m?m.name:r.type}</span></td>
-        <td style="color:var(--color-text-secondary)">${r.attempts.length}x</td>
+        <td style="color:#666;font-size:12px">${r.attempts.length}x</td>
         <td>${attemptsHTML(r,dashVM)}</td>
+        <td style="font-size:12px;color:#666">
+          ${sessionHTML?`<div style="margin-bottom:3px">${sessionHTML}</div>`:''}
+          ${r.note||''}
+        </td>
         <td><button class="btn btn-sm btn-danger" onclick="delRec('${r.id}')">Smazat</button></td>
       </tr>`;
     }).join('')}</tbody>
@@ -424,14 +450,11 @@ function renderAddForm(){
 }
 
 function attemptRowHTML(num, prefix){
-  const metricOpts=D.metricTypes&&D.metricTypes.length
-    ? `<option value="">— vyber metriku —</option>${D.metricTypes.map(m=>`<option value="${m.id}" data-name="${m.name}" data-unit="${m.unit}">${m.name} (${m.unit})</option>`).join('')}<option value="__new__">+ Nová metrika…</option>`
-    : `<option value="__new__">+ Nová metrika…</option>`;
-  return `<div class="attempt-row" id="${prefix}-attempt-row-${num}">
-    <span class="attempt-num">${num}.</span>
-    <input type="number" step="0.01" class="attempt-val" placeholder="0.00" style="max-width:120px">
-    <button class="btn btn-sm" style="margin-left:4px;font-size:11px;padding:4px 8px" onclick="addAttemptMetric('${prefix}',${num})">+ metrika</button>
-    <div id="${prefix}-attempt-metrics-${num}" style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px;width:100%"></div>
+  return `<div class="attempt-row" id="${prefix}-attempt-row-${num}" style="flex-wrap:wrap;align-items:flex-start;padding:6px 0;border-bottom:1px solid #f0f0f0">
+    <span class="attempt-num" style="margin-top:8px">${num}.</span>
+    <input type="number" step="0.01" class="attempt-val" placeholder="0.00" style="width:120px;flex-shrink:0">
+    <button class="btn btn-sm" style="font-size:11px;padding:4px 10px;margin-top:2px;flex-shrink:0" onclick="addAttemptMetric('${prefix}',${num})">+ metrika</button>
+    <div id="${prefix}-attempt-metrics-${num}" style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px;width:100%;padding-left:28px"></div>
   </div>`;
 }
 
@@ -442,15 +465,15 @@ function addAttemptMetric(prefix, num){
     ? `<option value="">— vyber —</option>${D.metricTypes.map(m=>`<option value="${m.id}" data-name="${m.name}" data-unit="${m.unit}">${m.name} (${m.unit})</option>`).join('')}<option value="__new__">+ Nová…</option>`
     : `<option value="__new__">+ Nová metrika…</option>`;
   const div=document.createElement('div');
-  div.style.cssText='display:flex;gap:4px;align-items:center;margin-top:4px;flex-wrap:wrap;width:100%;background:#f8f9fa;border:1px solid #e0e0e0;border-radius:6px;padding:6px';
+  div.style.cssText='display:inline-flex;gap:4px;align-items:center;margin-top:4px;background:#eef4fb;border:1px solid #bfdbfe;border-radius:6px;padding:4px 6px';
   div.id=mid;
   div.innerHTML=`
-    <select style="width:auto;min-width:150px;font-size:12px" onchange="onAttemptMetricSelect(this,'${mid}')">
+    <select style="width:auto;min-width:130px;font-size:12px;padding:4px 6px;border:1px solid #d0d5dd;border-radius:6px" onchange="onAttemptMetricSelect(this,'${mid}')">
       ${metricOpts}
     </select>
-    <input type="number" step="any" placeholder="hodnota" style="width:90px;font-size:12px" class="am-val" data-attempt="${num}" data-prefix="${prefix}">
-    <span class="am-unit" style="font-size:11px;color:#666"></span>
-    <button class="btn btn-sm btn-danger" style="padding:3px 7px;font-size:11px" onclick="document.getElementById('${mid}').remove()">×</button>`;
+    <input type="number" step="any" placeholder="hodnota" style="width:80px;font-size:12px;padding:4px 6px;border:1px solid #d0d5dd;border-radius:6px" class="am-val" data-attempt="${num}" data-prefix="${prefix}">
+    <span class="am-unit" style="font-size:11px;color:#555;min-width:20px"></span>
+    <button style="background:none;border:none;cursor:pointer;color:#A32D2D;font-size:14px;padding:0 2px;line-height:1" onclick="document.getElementById('${mid}').remove()">×</button>`;
   container.appendChild(div);
 }
 
@@ -494,14 +517,14 @@ function addSessionMetric(prefix){
     : `<option value="__new__">+ Nová metrika…</option>`;
   const div=document.createElement('div');
   div.id=mid;
-  div.style.cssText='display:flex;gap:6px;align-items:center;margin-bottom:6px;flex-wrap:wrap;background:#f8f9fa;border:1px solid #e0e0e0;border-radius:6px;padding:6px';
+  div.style.cssText='display:flex;gap:6px;align-items:center;margin-bottom:6px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;padding:6px 8px';
   div.innerHTML=`
-    <select style="width:auto;min-width:150px;font-size:12px" onchange="onSessionMetricSelect(this,'${mid}')">
+    <select style="width:auto;min-width:140px;font-size:13px;padding:6px 8px;border:1.5px solid #d0d5dd;border-radius:7px" onchange="onSessionMetricSelect(this,'${mid}')">
       ${metricOpts}
     </select>
-    <input type="number" step="any" placeholder="hodnota" style="width:100px;font-size:12px" class="sm-val">
-    <span class="sm-unit" style="font-size:11px;color:#666"></span>
-    <button class="btn btn-sm btn-danger" style="padding:3px 7px;font-size:11px" onclick="document.getElementById('${mid}').remove()">×</button>`;
+    <input type="number" step="any" placeholder="hodnota" style="width:110px;font-size:13px;padding:6px 8px;border:1.5px solid #d0d5dd;border-radius:7px" class="sm-val">
+    <span class="sm-unit" style="font-size:12px;color:#555;min-width:24px"></span>
+    <button style="background:none;border:none;cursor:pointer;color:#A32D2D;font-size:16px;padding:0 4px;line-height:1;margin-left:auto" onclick="document.getElementById('${mid}').remove()">×</button>`;
   container.appendChild(div);
 }
 
@@ -875,20 +898,20 @@ function filterResults(){
   const el=document.getElementById('res-table');
   if(!recs.length){ el.innerHTML='<div class="empty">Žádné záznamy</div>'; return; }
   el.innerHTML=`<div style="overflow-x:auto"><table>
-    <thead><tr><th>Datum</th><th>Disciplína</th><th>Opak.</th><th>Výkon</th>${viewMode==='all'?'<th>Metriky</th>':''}<th>Poznámka</th></tr></thead>
+    <thead><tr><th>Datum</th><th>Disciplína</th><th>Opak.</th><th>Výkon</th><th>Poznámka</th></tr></thead>
     <tbody>${recs.map(r=>{
       const m=mt(r.type);
       const b=best(r);
       const isPR=prMap[r.type]===b;
-      const mets=r.metrics&&r.metrics.length?r.metrics.map(me=>`<span style="display:inline-block;margin-right:6px;font-size:11px;background:#f3f4f6;border:1px solid #d1d5db;border-radius:4px;padding:2px 6px;color:#374151"><b>${me.name}:</b> ${me.value} ${me.unit}${me.scope==='per_attempt'?' /pok.':''}</span>`).join(''):'<span style="color:#aaa;font-size:11px">—</span>';
+      const sessionMets=(r.metrics||[]).filter(me=>me.scope==='session');
+      const sessionHTML=sessionMets.length?sessionMets.map(me=>`<span style="display:inline-block;margin-right:4px;font-size:11px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:4px;padding:2px 6px;color:#166534"><b>${me.name}:</b> ${me.value} ${me.unit}</span>`).join(''):'';
       return `<tr>
         <td>${fd(r.date)}</td>
         <td><span class="badge b-blue">${m?m.name:r.type}</span></td>
         <td style="color:#666;font-size:12px">${r.attempts.length}x</td>
         <td>${attemptsHTML(r,viewMode)}${isPR&&viewMode!=='all'?'<span class="pr-badge">PR</span>':''}</td>
-        ${viewMode==='all'?`<td>${mets}</td>`:''}
         <td style="color:#666;font-size:12px">
-          ${viewMode!=='all'&&r.metrics&&r.metrics.filter(me=>me.scope==='session').length?`<div style="margin-bottom:3px">${r.metrics.filter(me=>me.scope==='session').map(me=>`<span style="display:inline-block;margin-right:4px;font-size:11px;background:#f3f4f6;border:1px solid #d1d5db;border-radius:4px;padding:2px 6px;color:#374151"><b>${me.name}:</b> ${me.value} ${me.unit}</span>`).join('')}</div>`:''}
+          ${sessionHTML?`<div style="margin-bottom:4px">${sessionHTML}</div>`:''}
           ${r.note||''}
         </td>
       </tr>`;
