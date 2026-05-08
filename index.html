@@ -76,7 +76,10 @@ tr:last-child td{border-bottom:none}
     <label>Uživatelské jméno</label>
     <input type="text" id="login-user" placeholder="Jméno">
     <label>Heslo</label>
-    <input type="password" id="login-pass" placeholder="Heslo">
+    <div style="position:relative">
+      <input type="password" id="login-pass" placeholder="Heslo" style="padding-right:40px">
+      <button onclick="togglePassVis('login-pass',this)" type="button" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#888;font-size:16px;padding:0;line-height:1">👁</button>
+    </div>
     <button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:14px" onclick="doLogin()">Přihlásit se</button>
   </div>
 </div>
@@ -196,6 +199,12 @@ function showLoading(on){
 }
 
 function save(){}
+function togglePassVis(id,btn){
+  const inp=document.getElementById(id);
+  if(!inp) return;
+  inp.type=inp.type==='password'?'text':'password';
+  btn.textContent=inp.type==='password'?'👁':'🙈';
+}
 
 function fd(d){ if(!d)return''; const p=d.split('-'); return p[2]+'.'+p[1]+'.'+p[0]; }
 function mt(id){ return D.measureTypes.find(m=>m.id===id); }
@@ -279,16 +288,18 @@ function attemptsHTML(rec, mode){
   if(rec.attempts.length===1) return `<strong>${fmtVal(rec.attempts[0],rec.unit)}</strong>`;
   if(mode==='best') return `<strong>${fmtVal(b,rec.unit)}</strong> <span class="badge b-amber">nejlepší</span>`;
   if(mode==='avg') return `<strong>${fmtVal(a,rec.unit)}</strong> <span class="badge b-teal">průměr</span>`;
-  // 'all' mode - per attempt rows with metrics
-  const perAttemptMetrics={}; // {attemptNum: [{name,value,unit}]}
+  // 'all' mode - per attempt rows with metrics aligned in columns
+  const perAttemptMetrics={};
   (rec.metrics||[]).filter(me=>me.scope==='per_attempt').forEach(me=>{
     const ai=(me.attempt||1);
     if(!perAttemptMetrics[ai]) perAttemptMetrics[ai]=[];
     perAttemptMetrics[ai].push(me);
   });
-  // collect all metric names used across all attempts
   const allMetricNames=[...new Set((rec.metrics||[]).filter(me=>me.scope==='per_attempt').map(me=>me.name))];
-  return `<div style="font-size:12px">${rec.attempts.map((v,i)=>{
+  // build grid: col0=num, col1=value, col2..N=metric columns
+  const cols=['#','Výkon',...allMetricNames];
+  const headerRow=`<tr style="border-bottom:1.5px solid #d0d5dd">${cols.map(c=>`<th style="text-align:left;padding:3px 10px 3px 0;font-size:11px;color:#666;font-weight:600;white-space:nowrap">${c}</th>`).join('')}</tr>`;
+  const dataRows=rec.attempts.map((v,i)=>{
     const ai=i+1;
     const mets=perAttemptMetrics[ai]||[];
     const metricsByName={};
@@ -296,11 +307,12 @@ function attemptsHTML(rec, mode){
     const metCols=allMetricNames.map(mn=>{
       const me=metricsByName[mn];
       return me
-        ? `<span style="font-size:11px;background:#eef4fb;border:1px solid #bfdbfe;border-radius:4px;padding:1px 5px;color:#1e40af;margin-left:4px"><b>${mn}:</b> ${me.value} ${me.unit}</span>`
-        : `<span style="font-size:11px;color:#aaa;margin-left:4px">${mn}: —</span>`;
+        ? `<td style="padding:3px 10px 3px 0;font-size:12px;white-space:nowrap"><span style="background:#eef4fb;border:1px solid #bfdbfe;border-radius:4px;padding:1px 6px;color:#1e40af">${me.value} ${me.unit}</span></td>`
+        : `<td style="padding:3px 10px 3px 0;font-size:12px;color:#aaa;white-space:nowrap">${mn}: —</td>`;
     }).join('');
-    return `<div style="padding:2px 0;border-bottom:1px solid #f0f0f0"><span style="color:#666;min-width:18px;display:inline-block">${ai}.</span> <strong>${v} ${rec.unit}</strong>${metCols}</div>`;
-  }).join('')}</div>`;
+    return `<tr><td style="padding:3px 10px 3px 0;font-size:12px;color:#666;white-space:nowrap">${ai}.</td><td style="padding:3px 10px 3px 0;font-size:12px;white-space:nowrap"><strong>${v} ${rec.unit}</strong></td>${metCols}</tr>`;
+  }).join('');
+  return `<table style="border-collapse:collapse;font-size:12px"><thead>${headerRow}</thead><tbody>${dataRows}</tbody></table>`;
 }
 
 // ── Confirm modal ──────────────────────────────────────────
@@ -620,6 +632,49 @@ async function saveRec(){
   }catch(e){ aa.innerHTML='<div class="alert alert-r">Chyba uložení: '+e.message+'</div>'; }
 }
 
+function showProfile(uid){
+  const u=D.users.find(x=>x.id===uid);
+  if(!u) return;
+  document.getElementById('coach-modal').classList.remove('hidden');
+  document.getElementById('modal-title').textContent=(u.role==='athlete'?'Profil atleta':'Profil trenéra')+': '+u.name;
+  document.getElementById('modal-body').innerHTML=`
+    <div id="m-alert"></div>
+    <label>Jméno</label>
+    <input type="text" id="p-name" value="${u.name}">
+    <label>Uživatelské jméno (login)</label>
+    <input type="text" id="p-id" value="${u.id}" disabled style="background:#f5f5f5;color:#888">
+    <label>Heslo</label>
+    <div style="position:relative">
+      <input type="password" id="p-pass" value="${u.pass}" style="padding-right:40px">
+      <button onclick="togglePassVis('p-pass',this)" type="button" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#888;font-size:16px;padding:0;line-height:1">👁</button>
+    </div>`;
+  document.getElementById('modal-actions').innerHTML=`
+    <button class="btn btn-primary" onclick="saveProfile('${uid}')">Uložit změny</button>
+    <button class="btn" onclick="closeModal()">Zrušit</button>`;
+}
+
+async function saveProfile(uid){
+  const name=document.getElementById('p-name').value.trim();
+  const pass=document.getElementById('p-pass').value;
+  const ma=document.getElementById('m-alert');
+  if(!name||!pass){ ma.innerHTML='<div class="alert alert-r">Vyplňte jméno a heslo</div>'; return; }
+  ma.innerHTML='<div class="alert" style="background:#E6F1FB;color:#0C447C;border:0.5px solid #185FA5">Ukládám…</div>';
+  try{
+    // Supabase UPDATE
+    const r=await fetch(`${SB_URL}/rest/v1/users?id=eq.${encodeURIComponent(uid)}`,{
+      method:'PATCH',
+      headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},
+      body:JSON.stringify({name,pass})
+    });
+    if(!r.ok) throw new Error(await r.text());
+    const u=D.users.find(x=>x.id===uid);
+    if(u){ u.name=name; u.pass=pass; }
+    closeModal();
+    // re-render whichever tab is active
+    renderAthletes(); renderCoaches();
+  }catch(e){ ma.innerHTML='<div class="alert alert-r">Chyba: '+e.message+'</div>'; }
+}
+
 function renderAthletes(){
   const athletes=D.users.filter(u=>u.role==='athlete');
   document.getElementById('cv-athletes').innerHTML=`
@@ -637,6 +692,7 @@ function renderAthletes(){
             <div style="font-size:14px;font-weight:500">${a.name}</div>
             <div style="font-size:12px;color:var(--color-text-secondary)">${cnt} záznamů · login: <code>${a.id}</code></div>
           </div>
+          <button class="btn btn-sm" onclick="showProfile('${a.id}')" style="margin-right:4px">Profil</button>
           <button class="btn btn-sm btn-danger" onclick="delAthlete('${a.id}')">Smazat</button>
         </div>`;
       }).join('')||'<div class="empty">Žádní svěřenci</div>'}
@@ -727,6 +783,7 @@ function renderCoaches(){
             <div style="font-size:14px;font-weight:500">${c.name}</div>
             <div style="font-size:12px;color:var(--color-text-secondary)">login: <code>${c.id}</code></div>
           </div>
+          <button class="btn btn-sm" onclick="showProfile('${c.id}')" style="margin-right:4px">Profil</button>
           <button class="btn btn-sm btn-danger" onclick="delCoach('${c.id}')">Smazat</button>
         </div>`;
       }).join('')||'<div class="empty">Žádní trenéři</div>'}
