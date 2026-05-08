@@ -96,7 +96,7 @@ tr:last-child td{border-bottom:none}
       <button class="tab" onclick="cTab('add')" id="ct-add">Zadat výkon</button>
       <button class="tab" onclick="cTab('coachchart')" id="ct-coachchart">Graf</button>
       <button class="tab" onclick="cTab('athletes')" id="ct-athletes">Svěřenci</button>
-      <button class="tab" onclick="cTab('settings')" id="ct-settings">Nastavení</button>
+      <button class="tab" onclick="cTab('settings')" id="ct-settings">Disciplíny</button>
       <button class="tab hidden" onclick="cTab('coaches')" id="ct-coaches">Trenéři</button>
     </div>
     <div id="cv-dashboard"></div>
@@ -174,7 +174,9 @@ async function loadAll(){
     ]);
     D.users=users;
     D.measureTypes=mt.map(m=>({...m}));
-    D.records=recs.map(r=>({...r,attempts:Array.isArray(r.attempts)?r.attempts:JSON.parse(r.attempts)}));
+    D.records=recs.map(r=>({...r,attempts:Array.isArray(r.attempts)?r.attempts:JSON.parse(r.attempts),metrics:r.metrics||[]}));
+    const metricTypesRaw=await sbGet('metric_types','select=*');
+    D.metricTypes=metricTypesRaw||[];
   }catch(e){
     alert('Chyba připojení k databázi: '+e.message);
   }
@@ -199,7 +201,17 @@ function fd(d){ if(!d)return''; const p=d.split('-'); return p[2]+'.'+p[1]+'.'+p
 function mt(id){ return D.measureTypes.find(m=>m.id===id); }
 function au(id){ return D.users.find(u=>u.id===id); }
 function best(rec){ const m=mt(rec.type); return m&&m.lib ? Math.min(...rec.attempts) : Math.max(...rec.attempts); }
-function avg(rec){ return rec.attempts.reduce((a,b)=>a+b,0)/rec.attempts.length; }
+function avg(rec){
+  const sum=rec.attempts.reduce((a,b)=>a+b,0);
+  const raw=sum/rec.attempts.length;
+  // round to max decimal places used in source values
+  const maxDec=Math.max(...rec.attempts.map(v=>{
+    const s=v.toString();
+    const d=s.indexOf('.');
+    return d>=0?s.length-d-1:0;
+  }));
+  return parseFloat(raw.toFixed(maxDec));
+}
 function fmtVal(v,unit){ return parseFloat(v.toFixed(3))+' '+unit; }
 
 async function doLogin(){
@@ -329,7 +341,7 @@ function renderDashTable(){
   const el=document.getElementById('dash-table');
   if(!recs.length){ el.innerHTML='<div class="empty">Žádné záznamy</div>'; return; }
   el.innerHTML=`<div style="overflow-x:auto"><table>
-    <thead><tr><th>Datum</th><th>Svěřenec</th><th>Disciplína</th><th>Pok.</th><th>Výkon</th><th></th></tr></thead>
+    <thead><tr><th>Datum</th><th>Svěřenec</th><th>Disciplína</th><th>Opak.</th><th>Výkon</th><th></th></tr></thead>
     <tbody>${recs.map(r=>{
       const a=au(r.ath), m=mt(r.type);
       const ini=(a?a.name:'?').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
@@ -396,6 +408,22 @@ function renderAddForm(){
       </div>
       <label>Poznámka (volitelně)</label>
       <textarea id="f-note" rows="2" placeholder="5x200m, podmínky, komentář..."></textarea>
+      ${(D.metricTypes&&D.metricTypes.length)?`
+      <div style="margin-top:14px;border-top:1.5px solid #e8eaed;padding-top:14px">
+        <div style="font-size:13px;font-weight:600;margin-bottom:8px;color:#444">Doplňkové metriky (volitelně)</div>
+        <div id="metrics-rows">${D.metricTypes.map(mt=>`
+          <div style="margin-bottom:8px">
+            <label style="margin-top:0;margin-bottom:4px">${mt.name} (${mt.unit})</label>
+            <div style="display:flex;gap:6px;align-items:center">
+              <input type="number" step="any" class="metric-val" data-metric-id="${mt.id}" data-metric-name="${mt.name}" data-metric-unit="${mt.unit}" placeholder="hodnota" style="max-width:130px">
+              <select class="metric-scope" data-metric-id="${mt.id}" style="width:auto;min-width:160px;font-size:12px">
+                <option value="session">Celá aktivita</option>
+                <option value="per_attempt">Per pokus (průměr)</option>
+              </select>
+            </div>
+          </div>`).join('')}
+        </div>
+      </div>`:''}
       <div style="display:flex;gap:8px;margin-top:14px">
         <button class="btn btn-primary" onclick="saveRec()">Uložit výkon</button>
         <button class="btn" onclick="renderAddForm()">Vymazat</button>
@@ -443,7 +471,16 @@ async function saveRec(){
     aa.innerHTML='<div class="alert alert-r">Vyplňte všechna povinná pole a alespoň jeden pokus</div>'; return;
   }
   aa.innerHTML='<div class="alert" style="background:#E6F1FB;color:#0C447C;border:0.5px solid #185FA5">Ukládám…</div>';
-  const rec={id:'r'+Date.now(),ath,type,attempts,unit,date,note};
+  // collect metrics
+  const metrics=[];
+  document.querySelectorAll('.metric-val').forEach(inp=>{
+    const v=parseFloat(inp.value);
+    if(!isNaN(v)){
+      const scope=document.querySelector(`.metric-scope[data-metric-id="${inp.dataset.metricId}"]`);
+      metrics.push({id:inp.dataset.metricId,name:inp.dataset.metricName,unit:inp.dataset.metricUnit,value:v,scope:scope?scope.value:'session'});
+    }
+  });
+  const rec={id:'r'+Date.now(),ath,type,attempts,unit,date,note,metrics};
   try{
     await sbInsert('records',rec);
     D.records.push(rec);
@@ -489,8 +526,9 @@ function delAthlete(id){
 }
 
 function renderSettings(){
+  const metrics=D.metricTypes||[];
   document.getElementById('cv-settings').innerHTML=`
-    <div class="card">
+    <div class="card" style="margin-bottom:1rem">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
         <div class="section-hd" style="margin:0">Typy měření</div>
         <button class="btn btn-sm btn-primary" onclick="showModal('measure')">+ Přidat</button>
@@ -500,11 +538,35 @@ function renderSettings(){
         <tbody>${D.measureTypes.map(m=>`<tr>
           <td style="font-weight:500">${m.name}</td>
           <td><span class="badge b-gray">${m.unit}</span></td>
-          <td style="font-size:12px;color:var(--color-text-secondary)">${m.lib?'nižší hodnota':'vyšší hodnota'}</td>
+          <td style="font-size:12px;color:#666">${m.lib?'nižší hodnota':'vyšší hodnota'}</td>
           <td><button class="btn btn-sm btn-danger" onclick="delMeasure('${m.id}')">Smazat</button></td>
         </tr>`).join('')}</tbody>
       </table></div>
+    </div>
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <div class="section-hd" style="margin:0">Typy doplňkových metrik</div>
+        <button class="btn btn-sm btn-primary" onclick="showModal('metric')">+ Přidat</button>
+      </div>
+      <div style="overflow-x:auto"><table>
+        <thead><tr><th>Název</th><th>Jednotka</th><th></th></tr></thead>
+        <tbody>${metrics.length?metrics.map(m=>`<tr>
+          <td style="font-weight:500">${m.name}</td>
+          <td><span class="badge b-gray">${m.unit}</span></td>
+          <td><button class="btn btn-sm btn-danger" onclick="delMetricType('${m.id}')">Smazat</button></td>
+        </tr>`).join(''):'<tr><td colspan="3" class="empty" style="padding:1rem">Žádné metriky — přidej např. Laktát, HR, RPE</td></tr>'}</tbody>
+      </table></div>
     </div>`;
+}
+
+function delMetricType(id){
+  askConfirm('Smazat tento typ metriky?', async ()=>{
+    try{
+      await sbDelete('metric_types',{id});
+      D.metricTypes=(D.metricTypes||[]).filter(m=>m.id!==id);
+      renderSettings();
+    }catch(e){ alert('Chyba smazání: '+e.message); }
+  });
 }
 
 function delMeasure(id){
@@ -564,6 +626,15 @@ function showModal(type){
     document.getElementById('modal-actions').innerHTML=`
       <button class="btn btn-primary" onclick="saveUser('${type}')">Uložit</button>
       <button class="btn" onclick="closeModal()">Zrušit</button>`;
+  } else if(type==='metric'){
+    document.getElementById('modal-title').textContent='Přidat typ metriky';
+    document.getElementById('modal-body').innerHTML=`
+      <div id="m-alert"></div>
+      <label>Název</label><input type="text" id="m-mname" placeholder="Laktát, HR, RPE, Váha...">
+      <label>Jednotka</label><input type="text" id="m-unit" placeholder="mmol, bpm, kg...">`;
+    document.getElementById('modal-actions').innerHTML=`
+      <button class="btn btn-primary" onclick="saveMetricType()">Uložit</button>
+      <button class="btn" onclick="closeModal()">Zrušit</button>`;
   } else {
     document.getElementById('modal-title').textContent='Přidat typ měření';
     document.getElementById('modal-body').innerHTML=`
@@ -612,6 +683,21 @@ async function saveMeasure(){
   try{
     await sbInsert('measure_types',{id,name,unit,lib});
     D.measureTypes.push({id,name,unit,lib});
+    closeModal(); renderSettings();
+  }catch(e){ ma.innerHTML='<div class="alert alert-r">Chyba: '+e.message+'</div>'; }
+}
+
+async function saveMetricType(){
+  const name=document.getElementById('m-mname').value.trim();
+  const unit=document.getElementById('m-unit').value.trim();
+  const ma=document.getElementById('m-alert');
+  if(!name||!unit){ ma.innerHTML='<div class="alert alert-r">Vyplňte vše</div>'; return; }
+  const id='mt-'+name.toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,'')+'-'+Date.now();
+  ma.innerHTML='<div class="alert" style="background:#E6F1FB;color:#0C447C;border:0.5px solid #185FA5">Ukládám…</div>';
+  try{
+    await sbInsert('metric_types',{id,name,unit});
+    if(!D.metricTypes) D.metricTypes=[];
+    D.metricTypes.push({id,name,unit});
     closeModal(); renderSettings();
   }catch(e){ ma.innerHTML='<div class="alert alert-r">Chyba: '+e.message+'</div>'; }
 }
@@ -681,17 +767,22 @@ function filterResults(){
   const el=document.getElementById('res-table');
   if(!recs.length){ el.innerHTML='<div class="empty">Žádné záznamy</div>'; return; }
   el.innerHTML=`<div style="overflow-x:auto"><table>
-    <thead><tr><th>Datum</th><th>Disciplína</th><th>Pok.</th><th>Výkon</th><th>Poznámka</th></tr></thead>
+    <thead><tr><th>Datum</th><th>Disciplína</th><th>Opak.</th><th>Výkon</th>${viewMode==='all'?'<th>Metriky</th>':''}<th>Poznámka</th></tr></thead>
     <tbody>${recs.map(r=>{
       const m=mt(r.type);
       const b=best(r);
       const isPR=prMap[r.type]===b;
+      const mets=r.metrics&&r.metrics.length?r.metrics.map(me=>`<span style="display:inline-block;margin-right:6px;font-size:11px;background:#f3f4f6;border:1px solid #d1d5db;border-radius:4px;padding:2px 6px;color:#374151"><b>${me.name}:</b> ${me.value} ${me.unit}${me.scope==='per_attempt'?' /pok.':''}</span>`).join(''):'<span style="color:#aaa;font-size:11px">—</span>';
       return `<tr>
         <td>${fd(r.date)}</td>
         <td><span class="badge b-blue">${m?m.name:r.type}</span></td>
-        <td style="color:var(--color-text-secondary);font-size:12px">${r.attempts.length}x</td>
+        <td style="color:#666;font-size:12px">${r.attempts.length}x</td>
         <td>${attemptsHTML(r,viewMode)}${isPR&&viewMode!=='all'?'<span class="pr-badge">PR</span>':''}</td>
-        <td style="color:var(--color-text-secondary);font-size:12px">${r.note||''}</td>
+        ${viewMode==='all'?`<td>${mets}</td>`:''}
+        <td style="color:#666;font-size:12px">
+          ${viewMode!=='all'&&r.metrics&&r.metrics.filter(me=>me.scope==='session').length?`<div style="margin-bottom:3px">${r.metrics.filter(me=>me.scope==='session').map(me=>`<span style="display:inline-block;margin-right:4px;font-size:11px;background:#f3f4f6;border:1px solid #d1d5db;border-radius:4px;padding:2px 6px;color:#374151"><b>${me.name}:</b> ${me.value} ${me.unit}</span>`).join('')}</div>`:''}
+          ${r.note||''}
+        </td>
       </tr>`;
     }).join('')}</tbody>
   </table></div>`;
@@ -869,6 +960,21 @@ function renderAthleteAddForm(){
       </div>
       <label>Poznámka (volitelně)</label>
       <textarea id="af-note" rows="2" placeholder="Komentář, podmínky..."></textarea>
+      ${(D.metricTypes&&D.metricTypes.length)?`
+      <div style="margin-top:14px;border-top:1.5px solid #e8eaed;padding-top:14px">
+        <div style="font-size:13px;font-weight:600;margin-bottom:8px;color:#444">Doplňkové metriky (volitelně)</div>
+        ${D.metricTypes.map(mt=>`
+          <div style="margin-bottom:8px">
+            <label style="margin-top:0;margin-bottom:4px">${mt.name} (${mt.unit})</label>
+            <div style="display:flex;gap:6px;align-items:center">
+              <input type="number" step="any" class="ath-metric-val" data-metric-id="${mt.id}" data-metric-name="${mt.name}" data-metric-unit="${mt.unit}" placeholder="hodnota" style="max-width:130px">
+              <select class="ath-metric-scope" data-metric-id="${mt.id}" style="width:auto;min-width:160px;font-size:12px">
+                <option value="session">Celá aktivita</option>
+                <option value="per_attempt">Per pokus (průměr)</option>
+              </select>
+            </div>
+          </div>`).join('')}
+      </div>`:''}
       <div style="display:flex;gap:8px;margin-top:14px">
         <button class="btn btn-primary" onclick="athSaveRec()">Uložit výkon</button>
         <button class="btn" onclick="renderAthleteAddForm()">Vymazat</button>
@@ -915,7 +1021,15 @@ async function athSaveRec(){
     aa.innerHTML='<div class="alert alert-r">Vyplňte všechna povinná pole a alespoň jeden pokus</div>'; return;
   }
   aa.innerHTML='<div class="alert" style="background:#E6F1FB;color:#0C447C;border:0.5px solid #185FA5">Ukládám…</div>';
-  const rec={id:'r'+Date.now(),ath:CU.id,type,attempts,unit,date,note};
+  const ath_metrics=[];
+  document.querySelectorAll('.ath-metric-val').forEach(inp=>{
+    const v=parseFloat(inp.value);
+    if(!isNaN(v)){
+      const scope=document.querySelector(`.ath-metric-scope[data-metric-id="${inp.dataset.metricId}"]`);
+      ath_metrics.push({id:inp.dataset.metricId,name:inp.dataset.metricName,unit:inp.dataset.metricUnit,value:v,scope:scope?scope.value:'session'});
+    }
+  });
+  const rec={id:'r'+Date.now(),ath:CU.id,type,attempts,unit,date,note,metrics:ath_metrics};
   try{
     await sbInsert('records',rec);
     D.records.push(rec);
