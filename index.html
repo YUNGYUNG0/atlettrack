@@ -313,10 +313,42 @@ function seriesLabel(r){
 
 function attemptsHTML(rec, mode){
   const b=best(rec), a=avg(rec);
-  if(rec.attempts.length===1) return `<strong>${fmtVal(rec.attempts[0],rec.unit)}</strong>`;
+  const hasSeries=rec.series&&rec.series.length>0;
+  const allAttempts=getAllAttempts(rec);
+  if(allAttempts.length===1) return `<strong>${fmtVal(allAttempts[0],rec.unit)}</strong>`;
   if(mode==='best') return `<strong>${fmtVal(b,rec.unit)}</strong> <span class="badge b-amber">nejlepší</span>`;
   if(mode==='avg') return `<strong>${fmtVal(a,rec.unit)}</strong> <span class="badge b-teal">průměr</span>`;
-  // 'all' mode - per attempt rows with metrics aligned in columns
+  // 'all' mode
+  if(hasSeries){
+    return rec.series.map((s,si)=>{
+      const sMetrics=(s.metrics||[]);
+      const perAtt={};
+      sMetrics.filter(m=>m.scope==='per_attempt').forEach(m=>{ const ai=m.attempt||1; if(!perAtt[ai]) perAtt[ai]=[]; perAtt[ai].push(m); });
+      const allMNames=[...new Set(sMetrics.filter(m=>m.scope==='per_attempt').map(m=>m.name))];
+      const sessionMets=sMetrics.filter(m=>m.scope==='session');
+      const attRows=(s.attempts||[]).map((v,i)=>{
+        const ai=i+1;
+        const label=`${si+1}.${ai}`;
+        const metParts=allMNames.map(mn=>{
+          const me=(perAtt[ai]||[]).find(m=>m.name===mn);
+          return me
+            ? `<span style="font-size:11px;background:#eef4fb;border:1px solid #bfdbfe;border-radius:4px;padding:1px 6px;color:#1e40af;margin-left:6px"><b>${mn}:</b> ${me.value} ${me.unit}</span>`
+            : `<span style="font-size:11px;color:#bbb;margin-left:6px">${mn}: —</span>`;
+        }).join('');
+        const isLast=i===(s.attempts||[]).length-1&&!sessionMets.length;
+        return `<div style="display:flex;align-items:center;padding:3px 0;${isLast?'':'border-bottom:1px solid #e8eaed'}">
+          <span style="font-size:12px;color:#888;min-width:32px">${label}</span>
+          <strong style="font-size:13px;min-width:70px">${v} ${rec.unit}</strong>${metParts}
+        </div>`;
+      }).join('');
+      const sessParts=sessionMets.map(me=>`<span style="font-size:11px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:4px;padding:1px 6px;color:#166534;margin-right:4px"><b>${me.name}:</b> ${me.value} ${me.unit}</span>`).join('');
+      return `<div style="margin-bottom:4px;padding:5px 8px;background:#f8f9fa;border:1.5px solid #e0e0e0;border-radius:6px">
+        ${attRows}
+        ${sessParts?`<div style="margin-top:4px">${sessParts}</div>`:''}
+      </div>`;
+    }).join('');
+  }
+  // single series - show as 1.1, 1.2...
   const perAttemptMetrics={};
   (rec.metrics||[]).filter(me=>me.scope==='per_attempt').forEach(me=>{
     const ai=(me.attempt||1);
@@ -324,8 +356,7 @@ function attemptsHTML(rec, mode){
     perAttemptMetrics[ai].push(me);
   });
   const allMetricNames=[...new Set((rec.metrics||[]).filter(me=>me.scope==='per_attempt').map(me=>me.name))];
-  // build grid: col0=num, col1=value, col2..N=metric columns
-  const dataRows=rec.attempts.map((v,i)=>{
+  const dataRows=allAttempts.map((v,i)=>{
     const ai=i+1;
     const mets=perAttemptMetrics[ai]||[];
     const metricsByName={};
@@ -336,9 +367,9 @@ function attemptsHTML(rec, mode){
         ? `<span style="font-size:11px;background:#eef4fb;border:1px solid #bfdbfe;border-radius:4px;padding:1px 6px;color:#1e40af;margin-left:6px"><b>${mn}:</b> ${me.value} ${me.unit}</span>`
         : `<span style="font-size:11px;color:#bbb;margin-left:6px">${mn}: —</span>`;
     }).join('');
-    const isLast=i===rec.attempts.length-1;
+    const isLast=i===allAttempts.length-1;
     return `<div style="display:flex;align-items:center;padding:4px 0;${isLast?'':'border-bottom:1px solid #e8eaed'}">
-      <span style="font-size:12px;color:#888;min-width:20px">${ai}.</span>
+      <span style="font-size:12px;color:#888;min-width:32px">1.${ai}</span>
       <strong style="font-size:13px;min-width:70px">${v} ${rec.unit}</strong>
       ${metParts}
     </div>`;
@@ -1296,7 +1327,7 @@ function drawChart(){
   perfChart=new Chart(ctx,{
     type:'scatter',
     data:{datasets:[{data:scatterData,borderColor:'#185FA5',backgroundColor:'rgba(24,95,165,0.1)',
-      pointBackgroundColor:'#185FA5',pointRadius:7,pointHoverRadius:10,showLine:true,tension:0.3,fill:true,borderWidth:2}]},
+      pointBackgroundColor:'#185FA5',pointRadius:7,pointHoverRadius:10,showLine:true,tension:0,fill:true,borderWidth:2}]},
     options
   });
   document.getElementById('chart-note').innerHTML='';
@@ -1359,7 +1390,7 @@ function drawCoachChart(){
   coachPerfChart=new Chart(canvas.getContext('2d'),{
     type:'scatter',
     data:{datasets:[{data:scatterData,borderColor:'#185FA5',backgroundColor:'rgba(24,95,165,0.1)',
-      pointBackgroundColor:'#185FA5',pointRadius:7,pointHoverRadius:10,showLine:true,tension:0.3,fill:true,borderWidth:2}]},
+      pointBackgroundColor:'#185FA5',pointRadius:7,pointHoverRadius:10,showLine:true,tension:0,fill:true,borderWidth:2}]},
     options
   });
 }
