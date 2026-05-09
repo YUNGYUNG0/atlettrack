@@ -339,7 +339,7 @@ function confirmYes(){ document.getElementById('confirm-modal').classList.add('h
 function confirmNo(){ document.getElementById('confirm-modal').classList.add('hidden'); _confirmCb=null; }
 
 // ── Dashboard ───────────────────────────────────────────────
-let dashVM='best', dashAth='';
+let dashVM='best', dashAth='', dashType='';
 function renderDashboard(){
   const athletes=D.users.filter(u=>u.role==='athlete');
   const coaches=D.users.filter(u=>u.role==='coach');
@@ -1139,6 +1139,8 @@ function buildChartConfig(groupedRecs, vals, mode, unit){
         x:{
           type:'linear',
           grid:{color:'rgba(128,128,128,0.05)'},
+          min: groupedRecs.length ? new Date(groupedRecs[0].date).getTime() - 86400000*3 : undefined,
+          max: groupedRecs.length ? new Date(groupedRecs[groupedRecs.length-1].date).getTime() + 86400000*3 : undefined,
           ticks:{font:{size:11}, maxTicksLimit:8,
             callback:(v)=>{ const d=new Date(v); return `${d.getDate().toString().padStart(2,'0')}.${(d.getMonth()+1).toString().padStart(2,'0')}.${d.getFullYear()}`; }
           }
