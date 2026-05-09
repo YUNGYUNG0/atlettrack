@@ -300,7 +300,13 @@ function seriesLabel(r){
     const counts=r.series.map(s=>(s.attempts||[]).length);
     const allSame=counts.every(c=>c===counts[0]);
     if(allSame) return `${r.series.length}×${counts[0]}`;
-    return counts.map(c=>c+'×').join(' ');
+    // group consecutive equal counts: e.g. [3,3,2] -> "2×3 1×2"
+    const groups=[];
+    counts.forEach(c=>{
+      if(groups.length&&groups[groups.length-1].c===c) groups[groups.length-1].n++;
+      else groups.push({c,n:1});
+    });
+    return groups.map(g=>`${g.n}×${g.c}`).join(' ');
   }
   return (r.attempts||[]).length+'×';
 }
