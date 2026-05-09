@@ -142,6 +142,7 @@ tr:last-child td{border-bottom:none}
 </div><!-- end main-app -->
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
 <script>
 // ── Supabase konfigurace ────────────────────────────────────
 const SB_URL='https://ytfdorfwmkwesjhdkfhz.supabase.co';
@@ -204,6 +205,7 @@ function showLoading(on){
 }
 
 function save(){}
+Chart.register(ChartDataLabels);
 function togglePassVis(id,btn){
   const inp=document.getElementById(id);
   if(!inp) return;
@@ -411,10 +413,99 @@ function renderDashTable(){
           ${sessionHTML?`<div style="margin-bottom:3px">${sessionHTML}</div>`:''}
           ${r.note||''}
         </td>
-        <td><button class="btn btn-sm btn-danger" onclick="delRec('${r.id}')">Smazat</button></td>
+        <td style="white-space:nowrap">
+          <button class="btn btn-sm" style="margin-right:4px" onclick="editRec('${r.id}')">Upravit</button>
+          <button class="btn btn-sm btn-danger" onclick="delRec('${r.id}')">Smazat</button>
+        </td>
       </tr>`;
     }).join('')}</tbody>
   </table></div>`;
+}
+
+function editRec(id){
+  const r=D.records.find(x=>x.id===id);
+  if(!r) return;
+  document.getElementById('coach-modal').classList.remove('hidden');
+  document.getElementById('modal-title').textContent='Upravit záznam';
+  const mtype=mt(r.type);
+  // build attempts inputs
+  const attInputs=(r.series&&r.series.length?getAllAttempts(r):r.attempts).map((v,i)=>
+    `<div class="attempt-row"><span class="attempt-num">${i+1}.</span><input type="number" step="0.01" class="edit-att-val" value="${v}" style="max-width:120px"></div>`
+  ).join('');
+  // build session metrics
+  const sessMetInputs=(r.metrics||[]).filter(m=>m.scope==='session').map((me,i)=>
+    `<div style="display:flex;gap:6px;align-items:center;margin-bottom:4px">
+      <input type="text" class="edit-met-name" value="${me.name}" style="width:110px;font-size:12px" placeholder="Název">
+      <input type="number" step="any" class="edit-met-val" value="${me.value}" style="width:80px;font-size:12px">
+      <span style="font-size:11px;color:#666">${me.unit}</span>
+      <input type="hidden" class="edit-met-unit" value="${me.unit}">
+      <input type="hidden" class="edit-met-id" value="${me.id}">
+    </div>`
+  ).join('');
+  document.getElementById('modal-body').innerHTML=`
+    <div id="m-alert"></div>
+    <div class="form2">
+      <div><label>Datum</label><input type="date" id="edit-date" value="${r.date}"></div>
+      <div><label>Jednotka</label><input type="text" id="edit-unit" value="${r.unit}" style="max-width:80px"></div>
+    </div>
+    <label>Pokusy</label>
+    <div class="attempts-box">
+      <div id="edit-att-inputs">${attInputs}</div>
+      <div style="display:flex;gap:8px;margin-top:6px">
+        <button class="btn btn-sm" onclick="editAddAtt()">+ Pokus</button>
+        <button class="btn btn-sm btn-danger" onclick="editRemAtt()">- Odebrat</button>
+      </div>
+    </div>
+    ${sessMetInputs?`<label>Session metriky</label><div id="edit-mets">${sessMetInputs}</div>`:'<div id="edit-mets"></div>'}
+    <label>Poznámka</label>
+    <textarea id="edit-note" rows="2">${r.note||''}</textarea>`;
+  document.getElementById('modal-actions').innerHTML=`
+    <button class="btn btn-primary" onclick="saveEditRec('${id}')">Uložit</button>
+    <button class="btn" onclick="closeModal()">Zrušit</button>`;
+}
+
+function editAddAtt(){
+  const box=document.getElementById('edit-att-inputs');
+  const n=box.children.length+1;
+  const div=document.createElement('div');
+  div.className='attempt-row';
+  div.innerHTML=`<span class="attempt-num">${n}.</span><input type="number" step="0.01" class="edit-att-val" value="" style="max-width:120px">`;
+  box.appendChild(div);
+}
+function editRemAtt(){
+  const box=document.getElementById('edit-att-inputs');
+  if(box.children.length>1) box.removeChild(box.lastChild);
+}
+
+async function saveEditRec(id){
+  const r=D.records.find(x=>x.id===id);
+  if(!r) return;
+  const date=document.getElementById('edit-date').value;
+  const unit=document.getElementById('edit-unit').value.trim();
+  const note=document.getElementById('edit-note').value.trim();
+  const attempts=[];
+  document.querySelectorAll('.edit-att-val').forEach(inp=>{ const v=parseFloat(inp.value); if(!isNaN(v)) attempts.push(v); });
+  const ma=document.getElementById('m-alert');
+  if(!date||!unit||!attempts.length){ ma.innerHTML='<div class="alert alert-r">Vyplňte vše</div>'; return; }
+  // collect edited session metrics
+  const metNames=[...document.querySelectorAll('.edit-met-name')].map(e=>e.value.trim());
+  const metVals=[...document.querySelectorAll('.edit-met-val')].map(e=>parseFloat(e.value));
+  const metUnits=[...document.querySelectorAll('.edit-met-unit')].map(e=>e.value);
+  const metIds=[...document.querySelectorAll('.edit-met-id')].map(e=>e.value);
+  const metrics=(r.metrics||[]).filter(m=>m.scope==='per_attempt');
+  metNames.forEach((name,i)=>{ if(name&&!isNaN(metVals[i])) metrics.push({id:metIds[i],name,unit:metUnits[i],value:metVals[i],scope:'session'}); });
+  ma.innerHTML='<div class="alert" style="background:#E6F1FB;color:#0C447C">Ukládám…</div>';
+  try{
+    const patch={date,unit,note,attempts,metrics,series:r.series||null};
+    const res=await fetch(`${SB_URL}/rest/v1/records?id=eq.${encodeURIComponent(id)}`,{
+      method:'PATCH',
+      headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},
+      body:JSON.stringify(patch)
+    });
+    if(!res.ok) throw new Error(await res.text());
+    Object.assign(r,patch);
+    closeModal(); renderDashboard();
+  }catch(e){ ma.innerHTML='<div class="alert alert-r">Chyba: '+e.message+'</div>'; }
 }
 
 function delRec(id){
@@ -1087,18 +1178,27 @@ function renderChart(){
   drawChart();
 }
 
+function fmtDate(ts){ const d=new Date(ts); return `${d.getDate().toString().padStart(2,'0')}.${(d.getMonth()+1).toString().padStart(2,'0')}.${d.getFullYear()}`; }
+
 function buildChartConfig(groupedRecs, vals, mode, unit){
-  const uniqueYs=[...new Set(vals.map(v=>parseFloat(v.toFixed(6))))].sort((a,b)=>a-b);
-  const minY=Math.min(...uniqueYs);
-  const maxY=Math.max(...uniqueYs);
-  const pad=(maxY-minY)*0.15||0.1;
-  const scatterData=groupedRecs.map((r,i)=>({x:new Date(r.date).getTime(), y:vals[i], gi:i}));
+  const minY=Math.min(...vals);
+  const maxY=Math.max(...vals);
+  const pad=(maxY-minY)*0.2||0.5;
+  // X axis: only dates of actual records
+  const xTimestamps=groupedRecs.map(r=>new Date(r.date).getTime());
+  const scatterData=groupedRecs.map((r,i)=>({x:xTimestamps[i], y:vals[i], gi:i}));
   return {
     scatterData,
     options:{
       responsive:true, maintainAspectRatio:false,
       plugins:{
         legend:{display:false},
+        datalabels:{
+          align:'top', anchor:'top',
+          font:{size:11, weight:'600'},
+          color:'#185FA5',
+          formatter:(v)=>parseFloat(v.y.toFixed(4))+' '+(unit||'')
+        },
         tooltip:{
           callbacks:{
             title:(items)=>fd(groupedRecs[items[0].raw.gi].date),
@@ -1113,7 +1213,6 @@ function buildChartConfig(groupedRecs, vals, mode, unit){
               if(mode==='avg') lines.push(`─── Průměr: ${avg(r)} ${r.unit}`);
               const sm=(r.metrics||[]).filter(me=>me.scope==='session');
               if(sm.length){ lines.push(''); sm.forEach(me=>lines.push(`${me.name}: ${me.value} ${me.unit}`)); }
-              // also check series metrics
               if(r.series&&r.series.length){
                 r.series.forEach((s,si)=>{
                   const ssm=(s.metrics||[]).filter(m=>m.scope==='session');
@@ -1130,19 +1229,21 @@ function buildChartConfig(groupedRecs, vals, mode, unit){
           min: minY-pad,
           max: maxY+pad,
           grid:{color:'rgba(128,128,128,0.08)'},
-          afterBuildTicks:(axis)=>{
-            // only show exact data values as ticks
-            axis.ticks=uniqueYs.map(v=>({value:v}));
-          },
-          ticks:{font:{size:11}, callback:(v)=>parseFloat(parseFloat(v).toFixed(4))}
+          ticks:{font:{size:11}, callback:(v)=>parseFloat(v.toFixed(3))}
         },
         x:{
           type:'linear',
-          grid:{color:'rgba(128,128,128,0.05)'},
-          min: groupedRecs.length ? new Date(groupedRecs[0].date).getTime() - 86400000*3 : undefined,
-          max: groupedRecs.length ? new Date(groupedRecs[groupedRecs.length-1].date).getTime() + 86400000*3 : undefined,
-          ticks:{font:{size:11}, maxTicksLimit:8,
-            callback:(v)=>{ const d=new Date(v); return `${d.getDate().toString().padStart(2,'0')}.${(d.getMonth()+1).toString().padStart(2,'0')}.${d.getFullYear()}`; }
+          grid:{display:false},
+          min: xTimestamps.length ? xTimestamps[0]-86400000*5 : undefined,
+          max: xTimestamps.length ? xTimestamps[xTimestamps.length-1]+86400000*5 : undefined,
+          ticks:{
+            font:{size:11},
+            // only show ticks at actual data points
+            callback:(v)=>{
+              const match=xTimestamps.find(ts=>Math.abs(ts-v)<86400000*1.5);
+              return match!==undefined ? fmtDate(match) : '';
+            },
+            maxTicksLimit: xTimestamps.length+2
           }
         }
       }
