@@ -295,6 +295,16 @@ function aTab(name){
   else if(name==='addperf') renderAthleteAddForm();
 }
 
+function seriesLabel(r){
+  if(r.series&&r.series.length){
+    const counts=r.series.map(s=>(s.attempts||[]).length);
+    const allSame=counts.every(c=>c===counts[0]);
+    if(allSame) return `${r.series.length}×${counts[0]}`;
+    return counts.map(c=>c+'×').join(' ');
+  }
+  return (r.attempts||[]).length+'×';
+}
+
 function attemptsHTML(rec, mode){
   const b=best(rec), a=avg(rec);
   if(rec.attempts.length===1) return `<strong>${fmtVal(rec.attempts[0],rec.unit)}</strong>`;
@@ -407,7 +417,7 @@ function renderDashTable(){
           ${a?a.name:r.ath}
         </div></td>
         <td><span class="badge b-blue">${m?m.name:r.type}</span></td>
-        <td style="color:#666;font-size:12px">${r.attempts.length}x</td>
+        <td style="color:#666;font-size:12px">${seriesLabel(r)}</td>
         <td>${attemptsHTML(r,dashVM)}</td>
         <td style="font-size:12px;color:#666">
           ${sessionHTML?`<div style="margin-bottom:3px">${sessionHTML}</div>`:''}
@@ -628,7 +638,11 @@ function collectSeries(prefix){
     const sn=div.id.replace(`${prefix}-series-`,'');
     const sp=`${prefix}-s${sn}`;
     const attempts=[];
-    div.querySelectorAll('.attempt-val').forEach(inp=>{ const v=parseFloat(inp.value); if(!isNaN(v)) attempts.push(v); });
+    // only select attempt inputs directly belonging to this series' attempts container
+    const attBox=document.getElementById(`${prefix}-series-attempts-${sn}`);
+    if(attBox){
+      attBox.querySelectorAll('.attempt-val').forEach(inp=>{ const v=parseFloat(inp.value); if(!isNaN(v)) attempts.push(v); });
+    }
     const metrics=[];
     div.querySelectorAll('.am-val').forEach(inp=>{
       const v=parseFloat(inp.value); if(isNaN(v)) return;
@@ -1140,7 +1154,7 @@ function filterResults(){
       return `<tr>
         <td>${fd(r.date)}</td>
         <td><span class="badge b-blue">${m?m.name:r.type}</span></td>
-        <td style="color:#666;font-size:12px">${r.attempts.length}x</td>
+        <td style="color:#666;font-size:12px">${seriesLabel(r)}</td>
         <td>${attemptsHTML(r,viewMode)}${isPR&&viewMode!=='all'?'<span class="pr-badge">PR</span>':''}</td>
         <td style="color:#666;font-size:12px">
           ${sessionHTML?`<div style="margin-bottom:4px">${sessionHTML}</div>`:''}
