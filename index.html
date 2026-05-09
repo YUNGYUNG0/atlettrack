@@ -1,94 +1,333 @@
 
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
+:root{
+  --bg:#0d0f14;
+  --bg2:#13161d;
+  --bg3:#1a1e28;
+  --bg4:#222736;
+  --border:#2a2f3d;
+  --border2:#323849;
+  --accent:#4f8ef7;
+  --accent2:#3b73d8;
+  --accent-glow:rgba(79,142,247,0.15);
+  --accent-glow2:rgba(79,142,247,0.08);
+  --text:#e8eaf2;
+  --text2:#9ba3bc;
+  --text3:#636b85;
+  --green:#34d399;
+  --green-bg:rgba(52,211,153,0.1);
+  --green-border:rgba(52,211,153,0.25);
+  --red:#f87171;
+  --red-bg:rgba(248,113,113,0.1);
+  --red-border:rgba(248,113,113,0.25);
+  --amber:#fbbf24;
+  --amber-bg:rgba(251,191,36,0.12);
+  --amber-border:rgba(251,191,36,0.3);
+  --teal:#2dd4bf;
+  --teal-bg:rgba(45,212,191,0.1);
+  --teal-border:rgba(45,212,191,0.25);
+  --radius:10px;
+  --radius-sm:7px;
+  --shadow:0 4px 24px rgba(0,0,0,0.4);
+  --font-sans:'Inter',sans-serif;
+  --font-display:'Syne',sans-serif;
+  --font-mono:'DM Mono',monospace;
+}
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:var(--font-sans);color:var(--color-text-primary);background:#f0f2f5}
+body{font-family:var(--font-sans);color:var(--text);background:var(--bg);min-height:100vh}
 .hidden{display:none!important}
-.app{padding:1rem}
-.card{background:#fff;border:1.5px solid #d0d5dd;border-radius:10px;padding:1.25rem;margin-bottom:1rem;box-shadow:0 1px 4px rgba(0,0,0,0.06)}
-.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border:1.5px solid #d0d5dd;border-radius:8px;background:#fff;color:#1a1a1a;font-size:14px;cursor:pointer;font-family:var(--font-sans);font-weight:500}
-.btn:hover{background:#f5f5f5}
-.btn-primary{background:#185FA5;color:#fff;border-color:#185FA5}
-.btn-primary:hover{background:#0C447C;border-color:#0C447C}
-.btn-danger{color:#A32D2D;border-color:#F09595;background:#fff}
-.btn-danger:hover{background:#FCEBEB}
-.btn-sm{padding:5px 10px;font-size:12px}
-label{display:block;font-size:13px;color:#555;margin-bottom:4px;margin-top:12px;font-weight:500}
+.app{padding:1rem;max-width:1100px;margin:0 auto}
+
+/* CARDS */
+.card{
+  background:var(--bg2);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:1.25rem;
+  margin-bottom:1rem;
+  box-shadow:0 2px 12px rgba(0,0,0,0.3);
+  transition:border-color .2s;
+}
+
+/* BUTTONS */
+.btn{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:8px 14px;
+  border:1px solid var(--border2);
+  border-radius:var(--radius-sm);
+  background:var(--bg3);
+  color:var(--text);
+  font-size:13px;cursor:pointer;
+  font-family:var(--font-sans);font-weight:500;
+  transition:all .15s;
+  white-space:nowrap;
+}
+.btn:hover{background:var(--bg4);border-color:var(--accent);color:var(--accent)}
+.btn-primary{
+  background:var(--accent);color:#fff;border-color:var(--accent);
+  box-shadow:0 0 0 0 var(--accent-glow);
+}
+.btn-primary:hover{background:var(--accent2);border-color:var(--accent2);box-shadow:0 0 16px var(--accent-glow)}
+.btn-danger{color:var(--red);border-color:var(--red-border);background:var(--red-bg)}
+.btn-danger:hover{background:rgba(248,113,113,0.18);border-color:var(--red)}
+.btn-sm{padding:5px 10px;font-size:12px;border-radius:6px}
+
+/* FORM ELEMENTS */
+label{display:block;font-size:12px;color:var(--text3);margin-bottom:5px;margin-top:12px;font-weight:500;text-transform:uppercase;letter-spacing:0.05em}
 label:first-child{margin-top:0}
-input,select,textarea{width:100%;padding:8px 10px;border:1.5px solid #d0d5dd;border-radius:8px;background:#fff;color:#1a1a1a;font-size:14px;font-family:var(--font-sans)}
-input:focus,select:focus,textarea:focus{outline:none;border-color:#185FA5;box-shadow:0 0 0 3px rgba(24,95,165,0.1)}
+input,select,textarea{
+  width:100%;padding:9px 11px;
+  border:1px solid var(--border2);
+  border-radius:var(--radius-sm);
+  background:var(--bg3);
+  color:var(--text);
+  font-size:13px;
+  font-family:var(--font-sans);
+  transition:border-color .15s,box-shadow .15s;
+  -webkit-appearance:none;
+}
+input::placeholder,textarea::placeholder{color:var(--text3)}
+input:focus,select:focus,textarea:focus{
+  outline:none;
+  border-color:var(--accent);
+  box-shadow:0 0 0 3px var(--accent-glow);
+}
+select option{background:var(--bg3);color:var(--text)}
 .form2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.tab-bar{display:flex;gap:0;margin-bottom:1.25rem;border-bottom:2px solid #e0e0e0}
-.tab{padding:9px 16px;font-size:14px;cursor:pointer;border:none;border-bottom:2px solid transparent;color:#666;background:none;font-family:var(--font-sans);margin-bottom:-2px;font-weight:500}
-.tab.active{color:#185FA5;border-bottom-color:#185FA5;font-weight:600}
-.tab:hover:not(.active){color:#1a1a1a}
+
+/* TABS */
+.tab-bar{
+  display:flex;gap:0;margin-bottom:1.25rem;
+  border-bottom:1px solid var(--border);
+}
+.tab{
+  padding:10px 16px;font-size:13px;cursor:pointer;
+  border:none;border-bottom:2px solid transparent;
+  color:var(--text3);background:none;
+  font-family:var(--font-sans);margin-bottom:-1px;font-weight:500;
+  transition:color .15s,border-color .15s;
+}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent);font-weight:600}
+.tab:hover:not(.active){color:var(--text)}
+
+/* TABLE */
 table{width:100%;border-collapse:collapse;font-size:13px}
-th{text-align:left;padding:10px 12px;color:#555;font-weight:600;border-bottom:2px solid #d0d5dd;background:#f8f9fa;font-size:12px;text-transform:uppercase;letter-spacing:0.03em}
-td{padding:10px 12px;border-bottom:1px solid #e8eaed}
-tbody tr:nth-child(even) td{background:#f8f9fa}
-tbody tr:hover td{background:#eef4fb}
+th{
+  text-align:left;padding:9px 12px;
+  color:var(--text3);font-weight:600;
+  border-bottom:1px solid var(--border);
+  background:var(--bg);
+  font-size:11px;text-transform:uppercase;letter-spacing:0.06em;
+}
+td{padding:10px 12px;border-bottom:1px solid var(--border);color:var(--text)}
+tbody tr:nth-child(even) td{background:rgba(255,255,255,0.015)}
+tbody tr:hover td{background:var(--accent-glow2)}
 tr:last-child td{border-bottom:none}
+
+/* BADGES */
 .badge{display:inline-block;font-size:11px;padding:3px 9px;border-radius:20px;font-weight:600}
-.b-blue{background:#dbeafe;color:#1e40af;border:1px solid #bfdbfe}
-.b-green{background:#dcfce7;color:#166534;border:1px solid #bbf7d0}
-.b-amber{background:#fef3c7;color:#92400e;border:1px solid #fde68a}
-.b-gray{background:#f3f4f6;color:#374151;border:1px solid #d1d5db}
-.b-teal{background:#ccfbf1;color:#115e59;border:1px solid #99f6e4}
+.b-blue{background:rgba(79,142,247,0.15);color:#7eb3ff;border:1px solid rgba(79,142,247,0.3)}
+.b-green{background:var(--green-bg);color:var(--green);border:1px solid var(--green-border)}
+.b-amber{background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-border)}
+.b-gray{background:var(--bg4);color:var(--text2);border:1px solid var(--border2)}
+.b-teal{background:var(--teal-bg);color:var(--teal);border:1px solid var(--teal-border)}
+
+/* STAT CARDS */
 .stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px;margin-bottom:1rem}
-.stat-card{background:#fff;border:1.5px solid #d0d5dd;border-radius:10px;padding:1rem;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,0.05)}
-.stat-val{font-size:26px;font-weight:700;color:#185FA5}
-.stat-lbl{font-size:12px;color:#666;margin-top:3px;font-weight:500}
-.alert{padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:12px}
-.alert-r{background:#FCEBEB;color:#A32D2D;border:1.5px solid #F09595}
-.alert-g{background:#E1F5EE;color:#085041;border:1.5px solid #9FE1CB}
-.avatar{width:34px;height:34px;border-radius:50%;background:#dbeafe;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#1e40af;flex-shrink:0;border:1.5px solid #bfdbfe}
-.section-hd{font-size:15px;font-weight:700;margin-bottom:12px;color:#1a1a1a}
-.empty{text-align:center;padding:2rem;color:#888;font-size:14px}
-.chart-wrap{position:relative;height:240px;margin-top:1rem}
-.hdr{display:flex;align-items:center;justify-content:space-between;padding:0.75rem 0 1.25rem;border-bottom:1.5px solid #e0e0e0;margin-bottom:1rem}
-.login-wrap{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:1.5rem 1rem;background:#f0f2f5}
-.login-card{background:#fff;border:1.5px solid #d0d5dd;border-radius:12px;padding:2rem;width:100%;max-width:380px;box-shadow:0 4px 16px rgba(0,0,0,0.08)}
+.stat-card{
+  background:var(--bg2);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:1.1rem 1rem;
+  text-align:center;
+  position:relative;overflow:hidden;
+  transition:border-color .2s,transform .2s;
+}
+.stat-card::before{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(135deg,var(--accent-glow) 0%,transparent 60%);
+  opacity:0;transition:opacity .2s;
+}
+.stat-card:hover{border-color:var(--accent);transform:translateY(-1px)}
+.stat-card:hover::before{opacity:1}
+.stat-val{font-size:28px;font-weight:700;color:var(--accent);font-family:var(--font-display);position:relative}
+.stat-lbl{font-size:11px;color:var(--text3);margin-top:4px;font-weight:500;text-transform:uppercase;letter-spacing:0.05em;position:relative}
+
+/* ALERTS */
+.alert{padding:10px 14px;border-radius:var(--radius-sm);font-size:13px;margin-bottom:12px}
+.alert-r{background:var(--red-bg);color:var(--red);border:1px solid var(--red-border)}
+.alert-g{background:var(--green-bg);color:var(--green);border:1px solid var(--green-border)}
+
+/* AVATAR */
+.avatar{
+  width:34px;height:34px;border-radius:50%;
+  background:rgba(79,142,247,0.15);
+  display:flex;align-items:center;justify-content:center;
+  font-size:11px;font-weight:700;color:var(--accent);
+  flex-shrink:0;border:1px solid rgba(79,142,247,0.3);
+  font-family:var(--font-display);
+}
+
+/* SECTION HEADER */
+.section-hd{font-size:15px;font-weight:700;margin-bottom:12px;color:var(--text);font-family:var(--font-display)}
+.empty{text-align:center;padding:2.5rem;color:var(--text3);font-size:13px}
+
+/* CHART */
+.chart-wrap{position:relative;height:260px;margin-top:1rem}
+
+/* HEADER */
+.hdr{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:1rem 0 1.25rem;
+  border-bottom:1px solid var(--border);
+  margin-bottom:1rem;
+}
+
+/* LOGIN */
+.login-wrap{
+  display:flex;align-items:center;justify-content:center;
+  min-height:100vh;padding:1.5rem 1rem;
+  background:var(--bg);
+  position:relative;overflow:hidden;
+}
+.login-wrap::before{
+  content:'';position:absolute;
+  width:600px;height:600px;
+  background:radial-gradient(circle,rgba(79,142,247,0.08) 0%,transparent 70%);
+  top:50%;left:50%;transform:translate(-50%,-50%);
+  pointer-events:none;
+}
+.login-card{
+  background:var(--bg2);
+  border:1px solid var(--border2);
+  border-radius:14px;
+  padding:2.25rem 2rem;
+  width:100%;max-width:380px;
+  box-shadow:0 8px 40px rgba(0,0,0,0.5);
+  position:relative;z-index:1;
+}
 .role-tabs{display:flex;gap:8px;margin-bottom:1.25rem}
-.role-tab{flex:1;padding:9px;border:1.5px solid #d0d5dd;border-radius:8px;background:transparent;cursor:pointer;font-size:14px;font-family:var(--font-sans);color:#666;text-align:center;transition:all .15s;font-weight:500}
-.role-tab.active{border-color:#185FA5;background:#dbeafe;color:#1e40af;font-weight:600}
-.demo-box{margin-top:1rem;padding-top:1rem;border-top:1px solid #e0e0e0;font-size:12px;color:#888}
+.role-tab{
+  flex:1;padding:9px;border:1px solid var(--border2);
+  border-radius:var(--radius-sm);background:transparent;
+  cursor:pointer;font-size:13px;font-family:var(--font-sans);
+  color:var(--text3);text-align:center;transition:all .15s;font-weight:500;
+}
+.role-tab.active{border-color:var(--accent);background:var(--accent-glow);color:var(--accent);font-weight:600}
+.demo-box{margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border);font-size:12px;color:var(--text3)}
+
+/* FILTERS */
 .filter-row{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;margin-bottom:1rem}
 .filter-row select,.filter-row input{width:auto;min-width:130px}
-.pr-badge{background:#fef3c7;color:#92400e;font-size:11px;padding:2px 6px;border-radius:4px;margin-left:4px;font-weight:600;border:1px solid #fde68a}
-.overlay{position:fixed;inset:0;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;padding:1.5rem 1rem;z-index:100}
-.modal{background:#fff;border-radius:12px;border:2px solid #1a1a1a;box-shadow:0 8px 32px rgba(0,0,0,0.25);padding:1.75rem;width:100%;max-width:440px}
-.modal-title{font-size:16px;font-weight:700;margin-bottom:1rem}
+
+/* PR BADGE */
+.pr-badge{
+  background:var(--amber-bg);color:var(--amber);
+  font-size:10px;padding:2px 6px;border-radius:4px;
+  margin-left:5px;font-weight:700;border:1px solid var(--amber-border);
+  font-family:var(--font-mono);letter-spacing:0.05em;
+}
+
+/* MODAL */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,0.75);display:flex;align-items:center;justify-content:center;padding:1.5rem 1rem;z-index:100;backdrop-filter:blur(4px)}
+.modal{
+  background:var(--bg2);
+  border-radius:12px;
+  border:1px solid var(--border2);
+  box-shadow:0 16px 48px rgba(0,0,0,0.6);
+  padding:1.75rem;width:100%;max-width:440px;
+}
+.modal-title{font-size:16px;font-weight:700;margin-bottom:1rem;font-family:var(--font-display);color:var(--text)}
 .app-shell{position:relative}
+
+/* ATTEMPTS */
 .attempt-row{display:flex;align-items:center;gap:8px;margin-bottom:6px}
 .attempt-row input{flex:1}
-.attempt-num{font-size:13px;color:#666;min-width:20px;text-align:right;font-weight:600}
-.attempts-box{background:#f8f9fa;border:1.5px solid #e0e0e0;border-radius:8px;padding:12px;margin-top:8px}
-.view-toggle{display:flex;gap:4px}
-.vt-btn{padding:5px 12px;font-size:12px;border:1.5px solid #d0d5dd;border-radius:6px;cursor:pointer;background:#fff;font-family:var(--font-sans);color:#555;font-weight:500}
-.vt-btn.active{background:#185FA5;color:#fff;border-color:#185FA5}
-.attempts-detail{font-size:12px;color:#666}
+.attempt-num{
+  font-size:12px;color:var(--text3);min-width:20px;
+  text-align:right;font-weight:500;font-family:var(--font-mono);
+}
+.attempts-box{
+  background:var(--bg);border:1px solid var(--border);
+  border-radius:var(--radius-sm);padding:12px;margin-top:8px;
+}
+
+/* VIEW TOGGLE */
+.view-toggle{display:flex;gap:3px}
+.vt-btn{
+  padding:5px 12px;font-size:12px;
+  border:1px solid var(--border2);border-radius:6px;
+  cursor:pointer;background:var(--bg3);
+  font-family:var(--font-sans);color:var(--text3);font-weight:500;
+  transition:all .12s;
+}
+.vt-btn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.vt-btn:hover:not(.active){border-color:var(--accent);color:var(--accent)}
+.attempts-detail{font-size:12px;color:var(--text3)}
+
+/* BRANDING */
+.brand-logo{
+  font-family:var(--font-display);
+  font-size:20px;font-weight:800;
+  color:var(--text);
+  letter-spacing:-0.02em;
+}
+.brand-logo span{color:var(--accent)}
+.brand-sub{font-size:12px;color:var(--text3);margin-top:2px;font-family:var(--font-mono)}
+
+/* SERIES BOX */
+[id^="coach-series-"],[id^="ath-series-"]{
+  margin-bottom:10px;
+  border:1px solid var(--border2);
+  border-radius:var(--radius-sm);
+  padding:10px;
+  background:var(--bg);
+}
+
+/* SCROLLBAR */
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--text3)}
+
+/* CODE TAG */
+code{
+  font-family:var(--font-mono);
+  font-size:11px;
+  background:var(--bg4);
+  border:1px solid var(--border);
+  border-radius:4px;
+  padding:1px 5px;
+  color:var(--text2);
+}
 </style>
 
 <div id="login-screen" class="login-wrap">
   <div class="login-card">
-    <div style="font-size:20px;font-weight:500;margin-bottom:4px">AtletTrack</div>
-    <div style="font-size:13px;color:var(--color-text-secondary);margin-bottom:1.25rem">Sledování výkonnosti atletů</div>
+    <div style="margin-bottom:1.75rem">
+      <div class="brand-logo">Atlet<span>Track</span></div>
+      <div class="brand-sub">// sledování výkonnosti</div>
+    </div>
     <div id="login-alert"></div>
     <label>Uživatelské jméno</label>
     <input type="text" id="login-user" placeholder="Jméno">
     <label>Heslo</label>
     <div style="position:relative">
       <input type="password" id="login-pass" placeholder="Heslo" style="padding-right:40px">
-      <button onclick="togglePassVis('login-pass',this)" type="button" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#888;font-size:16px;padding:0;line-height:1">👁</button>
+      <button onclick="togglePassVis('login-pass',this)" type="button" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text3);font-size:16px;padding:0;line-height:1">👁</button>
     </div>
-    <button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:14px" onclick="doLogin()">Přihlásit se</button>
+    <button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:16px;padding:10px 14px;font-size:14px" onclick="doLogin()">Přihlásit se →</button>
   </div>
 </div>
 
 <div id="main-app" class="hidden app">
   <div class="hdr">
     <div>
-      <div style="font-size:18px;font-weight:500">AtletTrack</div>
-      <div style="font-size:13px;color:var(--color-text-secondary)" id="app-sub"></div>
+      <div class="brand-logo" style="font-size:17px">Atlet<span>Track</span></div>
+      <div style="font-size:11px;color:var(--text3);font-family:var(--font-mono)" id="app-sub"></div>
     </div>
     <button class="btn btn-sm" onclick="doLogout()">Odhlásit</button>
   </div>
@@ -197,8 +436,8 @@ function showLoading(on){
   if(!el){
     el=document.createElement('div');
     el.id='loading-overlay';
-    el.style.cssText='position:fixed;inset:0;background:rgba(255,255,255,0.85);display:flex;align-items:center;justify-content:center;z-index:999;font-size:14px;color:#185FA5';
-    el.innerHTML='<div>Načítám data…</div>';
+    el.style.cssText='position:fixed;inset:0;background:rgba(13,15,20,0.9);display:flex;align-items:center;justify-content:center;z-index:999;font-size:13px;color:var(--accent);font-family:var(--font-mono);backdrop-filter:blur(4px)';
+    el.innerHTML='<div>// načítám data…</div>';
     document.body.appendChild(el);
   }
   el.style.display=on?'flex':'none';
@@ -206,6 +445,13 @@ function showLoading(on){
 
 function save(){}
 Chart.register(ChartDataLabels);
+Chart.defaults.color='#636b85';
+Chart.defaults.borderColor='rgba(255,255,255,0.06)';
+Chart.defaults.plugins.tooltip.backgroundColor='#1a1e28';
+Chart.defaults.plugins.tooltip.borderColor='#2a2f3d';
+Chart.defaults.plugins.tooltip.borderWidth=1;
+Chart.defaults.plugins.tooltip.titleColor='#e8eaf2';
+Chart.defaults.plugins.tooltip.bodyColor='#9ba3bc';
 function togglePassVis(id,btn){
   const inp=document.getElementById(id);
   if(!inp) return;
@@ -239,7 +485,7 @@ async function doLogin(){
   const u=document.getElementById('login-user').value.trim();
   const p=document.getElementById('login-pass').value;
   const la=document.getElementById('login-alert');
-  la.innerHTML='<div class="alert" style="background:#E6F1FB;color:#0C447C;border:0.5px solid #185FA5">Přihlašuji…</div>';
+  la.innerHTML='<div class="alert" style="background:rgba(79,142,247,0.12);color:#7eb3ff;border:1px solid rgba(79,142,247,0.3)">Přihlašuji…</div>';
   await loadAll();
   const user=D.users.find(x=>x.id===u&&x.pass===p);
   if(!user){ la.innerHTML='<div class="alert alert-r">Nesprávné přihlašovací údaje</div>'; return; }
@@ -332,17 +578,17 @@ function attemptsHTML(rec, mode){
         const metParts=allMNames.map(mn=>{
           const me=(perAtt[ai]||[]).find(m=>m.name===mn);
           return me
-            ? `<span style="font-size:11px;background:#eef4fb;border:1px solid #bfdbfe;border-radius:4px;padding:1px 6px;color:#1e40af;margin-left:6px"><b>${mn}:</b> ${me.value} ${me.unit}</span>`
-            : `<span style="font-size:11px;color:#bbb;margin-left:6px">${mn}: —</span>`;
+            ? `<span style="font-size:11px;background:rgba(79,142,247,0.12);border:1px solid rgba(79,142,247,0.3);border-radius:4px;padding:1px 6px;color:#7eb3ff;margin-left:6px"><b>${mn}:</b> ${me.value} ${me.unit}</span>`
+            : `<span style="font-size:11px;color:var(--text3);margin-left:6px">${mn}: —</span>`;
         }).join('');
         const isLast=i===(s.attempts||[]).length-1&&!sessionMets.length;
-        return `<div style="display:flex;align-items:center;padding:3px 0;${isLast?'':'border-bottom:1px solid #e8eaed'}">
-          <span style="font-size:12px;color:#888;min-width:32px">${label}</span>
-          <strong style="font-size:13px;min-width:70px">${v} ${rec.unit}</strong>${metParts}
+        return `<div style="display:flex;align-items:center;padding:3px 0;${isLast?'':'border-bottom:1px solid var(--border)'}">
+          <span style="font-size:12px;color:var(--text3);min-width:32px;font-family:var(--font-mono)">${label}</span>
+          <strong style="font-size:13px;min-width:70px;color:var(--text)">${v} ${rec.unit}</strong>${metParts}
         </div>`;
       }).join('');
-      const sessParts=sessionMets.map(me=>`<span style="font-size:11px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:4px;padding:1px 6px;color:#166534;margin-right:4px"><b>${me.name}:</b> ${me.value} ${me.unit}</span>`).join('');
-      return `<div style="margin-bottom:4px;padding:5px 8px;background:#f8f9fa;border:1.5px solid #e0e0e0;border-radius:6px">
+      const sessParts=sessionMets.map(me=>`<span style="font-size:11px;background:var(--green-bg);border:1px solid var(--green-border);border-radius:4px;padding:1px 6px;color:var(--green);margin-right:4px"><b>${me.name}:</b> ${me.value} ${me.unit}</span>`).join('');
+      return `<div style="margin-bottom:4px;padding:5px 8px;background:var(--bg);border:1px solid var(--border);border-radius:6px">
         ${attRows}
         ${sessParts?`<div style="margin-top:4px">${sessParts}</div>`:''}
       </div>`;
@@ -364,13 +610,13 @@ function attemptsHTML(rec, mode){
     const metParts=allMetricNames.map(mn=>{
       const me=metricsByName[mn];
       return me
-        ? `<span style="font-size:11px;background:#eef4fb;border:1px solid #bfdbfe;border-radius:4px;padding:1px 6px;color:#1e40af;margin-left:6px"><b>${mn}:</b> ${me.value} ${me.unit}</span>`
-        : `<span style="font-size:11px;color:#bbb;margin-left:6px">${mn}: —</span>`;
+        ? `<span style="font-size:11px;background:rgba(79,142,247,0.12);border:1px solid rgba(79,142,247,0.3);border-radius:4px;padding:1px 6px;color:#7eb3ff;margin-left:6px"><b>${mn}:</b> ${me.value} ${me.unit}</span>`
+        : `<span style="font-size:11px;color:var(--text3);margin-left:6px">${mn}: —</span>`;
     }).join('');
     const isLast=i===allAttempts.length-1;
-    return `<div style="display:flex;align-items:center;padding:4px 0;${isLast?'':'border-bottom:1px solid #e8eaed'}">
-      <span style="font-size:12px;color:#888;min-width:32px">1.${ai}</span>
-      <strong style="font-size:13px;min-width:70px">${v} ${rec.unit}</strong>
+    return `<div style="display:flex;align-items:center;padding:4px 0;${isLast?'':'border-bottom:1px solid var(--border)'}">
+      <span style="font-size:12px;color:var(--text3);min-width:32px;font-family:var(--font-mono)">1.${ai}</span>
+      <strong style="font-size:13px;min-width:70px;color:var(--text)">${v} ${rec.unit}</strong>
       ${metParts}
     </div>`;
   }).join('');
@@ -446,7 +692,7 @@ function renderDashTable(){
       const a=au(r.ath), m=mt(r.type);
       const ini=(a?a.name:'?').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
       const sessionMets=(r.metrics||[]).filter(me=>me.scope==='session');
-      const sessionHTML=sessionMets.length?sessionMets.map(me=>`<span style="display:inline-block;margin-right:4px;font-size:11px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:4px;padding:2px 6px;color:#166534"><b>${me.name}:</b> ${me.value} ${me.unit}</span>`).join(''):'';
+      const sessionHTML=sessionMets.length?sessionMets.map(me=>`<span style="display:inline-block;margin-right:4px;font-size:11px;background:var(--green-bg);border:1px solid var(--green-border);border-radius:4px;padding:2px 6px;color:var(--green)"><b>${me.name}:</b> ${me.value} ${me.unit}</span>`).join(''):'';
       return `<tr>
         <td>${fd(r.date)}</td>
         <td><div style="display:flex;align-items:center;gap:6px">
@@ -454,9 +700,9 @@ function renderDashTable(){
           ${a?a.name:r.ath}
         </div></td>
         <td><span class="badge b-blue">${m?m.name:r.type}</span></td>
-        <td style="color:#666;font-size:12px">${seriesLabel(r)}</td>
+        <td style="color:var(--text3);font-size:12px">${seriesLabel(r)}</td>
         <td>${attemptsHTML(r,dashVM)}</td>
-        <td style="font-size:12px;color:#666">
+        <td style="font-size:12px;color:var(--text3)">
           ${sessionHTML?`<div style="margin-bottom:3px">${sessionHTML}</div>`:''}
           ${r.note||''}
         </td>
@@ -484,7 +730,7 @@ function editRec(id){
     `<div style="display:flex;gap:6px;align-items:center;margin-bottom:4px">
       <input type="text" class="edit-met-name" value="${me.name}" style="width:110px;font-size:12px" placeholder="Název">
       <input type="number" step="any" class="edit-met-val" value="${me.value}" style="width:80px;font-size:12px">
-      <span style="font-size:11px;color:#666">${me.unit}</span>
+      <span style="font-size:11px;color:var(--text3)">${me.unit}</span>
       <input type="hidden" class="edit-met-unit" value="${me.unit}">
       <input type="hidden" class="edit-met-id" value="${me.id}">
     </div>`
@@ -541,7 +787,7 @@ async function saveEditRec(id){
   const metIds=[...document.querySelectorAll('.edit-met-id')].map(e=>e.value);
   const metrics=(r.metrics||[]).filter(m=>m.scope==='per_attempt');
   metNames.forEach((name,i)=>{ if(name&&!isNaN(metVals[i])) metrics.push({id:metIds[i],name,unit:metUnits[i],value:metVals[i],scope:'session'}); });
-  ma.innerHTML='<div class="alert" style="background:#E6F1FB;color:#0C447C">Ukládám…</div>';
+  ma.innerHTML='<div class="alert" style="background:rgba(79,142,247,0.12);color:#7eb3ff">Ukládám…</div>';
   try{
     const patch={date,unit,note,attempts,metrics,series:r.series||null};
     const res=await fetch(`${SB_URL}/rest/v1/records?id=eq.${encodeURIComponent(id)}`,{
@@ -611,10 +857,10 @@ function addSeries(prefix){
   const container=document.getElementById(`series-container-${prefix}`);
   const div=document.createElement('div');
   div.id=`${prefix}-series-${sn}`;
-  div.style.cssText='margin-bottom:10px;border:1.5px solid #d0d5dd;border-radius:8px;padding:10px;background:#fafafa';
+  div.style.cssText='margin-bottom:10px;border:1px solid var(--border2);border-radius:8px;padding:10px;background:var(--bg)';
   div.innerHTML=`
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-      <div style="font-size:13px;font-weight:700;color:#444">Série ${sn}</div>
+      <div style="font-size:13px;font-weight:700;color:var(--text)">Série ${sn}</div>
       <button class="btn btn-sm btn-danger" onclick="removeSeries('${prefix}',${sn})">× Odebrat sérii</button>
     </div>
     <div id="${prefix}-series-attempts-${sn}">
@@ -626,7 +872,7 @@ function addSeries(prefix){
     </div>
     <div style="margin-top:8px;border-top:1px solid #e8eaed;padding-top:8px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
-        <span style="font-size:12px;color:#666;font-weight:600">Metriky série</span>
+        <span style="font-size:12px;color:var(--text3);font-weight:600">Metriky série</span>
         <button class="btn btn-sm" onclick="addSessionMetric('${prefix}-s${sn}')">+ metrika</button>
       </div>
       <div id="session-metrics-${prefix}-s${sn}"></div>
@@ -697,7 +943,7 @@ function collectSeries(prefix){
 }
 
 function attemptRowHTML(num, prefix){
-  return `<div class="attempt-row" id="${prefix}-attempt-row-${num}" style="flex-wrap:wrap;align-items:flex-start;padding:6px 0;border-bottom:1px solid #f0f0f0">
+  return `<div class="attempt-row" id="${prefix}-attempt-row-${num}" style="flex-wrap:wrap;align-items:flex-start;padding:6px 0;border-bottom:1px solid var(--border)">
     <span class="attempt-num" style="margin-top:8px">${num}.</span>
     <input type="number" step="0.01" class="attempt-val" placeholder="0.00" style="width:120px;flex-shrink:0">
     <button class="btn btn-sm" style="font-size:11px;padding:4px 10px;margin-top:2px;flex-shrink:0" onclick="addAttemptMetric('${prefix}',${num})">+ metrika</button>
@@ -712,14 +958,14 @@ function addAttemptMetric(prefix, num){
     ? `<option value="">— vyber —</option>${D.metricTypes.map(m=>`<option value="${m.id}" data-name="${m.name}" data-unit="${m.unit}">${m.name} (${m.unit})</option>`).join('')}<option value="__new__">+ Nová…</option>`
     : `<option value="__new__">+ Nová metrika…</option>`;
   const div=document.createElement('div');
-  div.style.cssText='display:inline-flex;gap:4px;align-items:center;margin-top:4px;background:#eef4fb;border:1px solid #bfdbfe;border-radius:6px;padding:4px 6px';
+  div.style.cssText='display:inline-flex;gap:4px;align-items:center;margin-top:4px;background:rgba(79,142,247,0.1);border:1px solid rgba(79,142,247,0.25);border-radius:6px;padding:4px 6px';
   div.id=mid;
   div.innerHTML=`
-    <select style="width:auto;min-width:130px;font-size:12px;padding:4px 6px;border:1px solid #d0d5dd;border-radius:6px" onchange="onAttemptMetricSelect(this,'${mid}')">
+    <select style="width:auto;min-width:130px;font-size:12px;padding:4px 6px;border:1px solid var(--border2);border-radius:6px;background:var(--bg3);color:var(--text)" onchange="onAttemptMetricSelect(this,'${mid}')">
       ${metricOpts}
     </select>
-    <input type="number" step="any" placeholder="hodnota" style="width:80px;font-size:12px;padding:4px 6px;border:1px solid #d0d5dd;border-radius:6px" class="am-val" data-attempt="${num}" data-prefix="${prefix}">
-    <span class="am-unit" style="font-size:11px;color:#555;min-width:20px"></span>
+    <input type="number" step="any" placeholder="hodnota" style="width:80px;font-size:12px;padding:4px 6px;border:1px solid var(--border2);border-radius:6px;background:var(--bg3);color:var(--text)" class="am-val" data-attempt="${num}" data-prefix="${prefix}">
+    <span class="am-unit" style="font-size:11px;color:var(--text3);min-width:20px"></span>
     <button style="background:none;border:none;cursor:pointer;color:#A32D2D;font-size:14px;padding:0 2px;line-height:1" onclick="document.getElementById('${mid}').remove()">×</button>`;
   container.appendChild(div);
 }
@@ -764,13 +1010,13 @@ function addSessionMetric(prefix){
     : `<option value="__new__">+ Nová metrika…</option>`;
   const div=document.createElement('div');
   div.id=mid;
-  div.style.cssText='display:flex;gap:6px;align-items:center;margin-bottom:6px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;padding:6px 8px';
+  div.style.cssText='display:flex;gap:6px;align-items:center;margin-bottom:6px;background:var(--green-bg);border:1px solid var(--green-border);border-radius:6px;padding:6px 8px';
   div.innerHTML=`
-    <select style="width:auto;min-width:140px;font-size:13px;padding:6px 8px;border:1.5px solid #d0d5dd;border-radius:7px" onchange="onSessionMetricSelect(this,'${mid}')">
+    <select style="width:auto;min-width:140px;font-size:13px;padding:6px 8px;border:1px solid var(--border2);border-radius:7px;background:var(--bg3);color:var(--text)" onchange="onSessionMetricSelect(this,'${mid}')">
       ${metricOpts}
     </select>
-    <input type="number" step="any" placeholder="hodnota" style="width:110px;font-size:13px;padding:6px 8px;border:1.5px solid #d0d5dd;border-radius:7px" class="sm-val">
-    <span class="sm-unit" style="font-size:12px;color:#555;min-width:24px"></span>
+    <input type="number" step="any" placeholder="hodnota" style="width:110px;font-size:13px;padding:6px 8px;border:1px solid var(--border2);border-radius:7px;background:var(--bg3);color:var(--text)" class="sm-val">
+    <span class="sm-unit" style="font-size:12px;color:var(--text3);min-width:24px"></span>
     <button style="background:none;border:none;cursor:pointer;color:#A32D2D;font-size:16px;padding:0 4px;line-height:1;margin-left:auto" onclick="document.getElementById('${mid}').remove()">×</button>`;
   container.appendChild(div);
 }
@@ -848,7 +1094,7 @@ async function saveRec(){
   if(!ath||!date||!type||!unit||attempts.length===0){
     aa.innerHTML='<div class="alert alert-r">Vyplňte všechna povinná pole a alespoň jeden pokus</div>'; return;
   }
-  aa.innerHTML='<div class="alert" style="background:#E6F1FB;color:#0C447C;border:0.5px solid #185FA5">Ukládám…</div>';
+  aa.innerHTML='<div class="alert" style="background:rgba(79,142,247,0.12);color:#7eb3ff;border:1px solid rgba(79,142,247,0.3)">Ukládám…</div>';
   const rec={id:'r'+Date.now(),ath,type,attempts,unit,date,note,metrics,series:seriesData};
   try{
     await sbInsert('records',{...rec,series:rec.series?JSON.stringify(rec.series):null});
@@ -868,11 +1114,11 @@ function showProfile(uid){
     <label>Jméno</label>
     <input type="text" id="p-name" value="${u.name}">
     <label>Uživatelské jméno (login)</label>
-    <input type="text" id="p-id" value="${u.id}" disabled style="background:#f5f5f5;color:#888">
+    <input type="text" id="p-id" value="${u.id}" disabled style="background:var(--bg);color:var(--text3)">
     <label>Heslo</label>
     <div style="position:relative">
       <input type="password" id="p-pass" value="${u.pass}" style="padding-right:40px">
-      <button onclick="togglePassVis('p-pass',this)" type="button" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#888;font-size:16px;padding:0;line-height:1">👁</button>
+      <button onclick="togglePassVis('p-pass',this)" type="button" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text3);font-size:16px;padding:0;line-height:1">👁</button>
     </div>`;
   document.getElementById('modal-actions').innerHTML=`
     <button class="btn btn-primary" onclick="saveProfile('${uid}')">Uložit změny</button>
@@ -884,7 +1130,7 @@ async function saveProfile(uid){
   const pass=document.getElementById('p-pass').value;
   const ma=document.getElementById('m-alert');
   if(!name||!pass){ ma.innerHTML='<div class="alert alert-r">Vyplňte jméno a heslo</div>'; return; }
-  ma.innerHTML='<div class="alert" style="background:#E6F1FB;color:#0C447C;border:0.5px solid #185FA5">Ukládám…</div>';
+  ma.innerHTML='<div class="alert" style="background:rgba(79,142,247,0.12);color:#7eb3ff;border:1px solid rgba(79,142,247,0.3)">Ukládám…</div>';
   try{
     // Supabase UPDATE
     const r=await fetch(`${SB_URL}/rest/v1/users?id=eq.${encodeURIComponent(uid)}`,{
@@ -951,7 +1197,7 @@ function renderSettings(){
         <tbody>${D.measureTypes.map(m=>`<tr>
           <td style="font-weight:500">${m.name}</td>
           <td><span class="badge b-gray">${m.unit}</span></td>
-          <td style="font-size:12px;color:#666">${m.lib?'nižší hodnota':'vyšší hodnota'}</td>
+          <td style="font-size:12px;color:var(--text3)">${m.lib?'nižší hodnota':'vyšší hodnota'}</td>
           <td><button class="btn btn-sm btn-danger" onclick="delMeasure('${m.id}')">Smazat</button></td>
         </tr>`).join('')}</tbody>
       </table></div>
@@ -1004,7 +1250,7 @@ function renderCoaches(){
       ${coaches.map(c=>{
         const ini=c.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
         return `<div style="display:flex;align-items:center;gap:10px;padding:8px;border-radius:var(--border-radius-md)">
-          <div class="avatar" style="background:#FAEEDA;color:#633806">${ini}</div>
+          <div class="avatar" style="background:rgba(251,191,36,0.12);color:var(--amber)">${ini}</div>
           <div style="flex:1">
             <div style="font-size:14px;font-weight:500">${c.name}</div>
             <div style="font-size:12px;color:var(--color-text-secondary)">login: <code>${c.id}</code></div>
@@ -1075,7 +1321,7 @@ async function saveUser(role){
   const ma=document.getElementById('m-alert');
   if(!name||!id||!pass){ ma.innerHTML='<div class="alert alert-r">Vyplňte vše</div>'; return; }
   if(D.users.find(u=>u.id===id)){ ma.innerHTML='<div class="alert alert-r">Přihlašovací jméno je obsazeno</div>'; return; }
-  ma.innerHTML='<div class="alert" style="background:#E6F1FB;color:#0C447C;border:0.5px solid #185FA5">Ukládám…</div>';
+  ma.innerHTML='<div class="alert" style="background:rgba(79,142,247,0.12);color:#7eb3ff;border:1px solid rgba(79,142,247,0.3)">Ukládám…</div>';
   try{
     await sbInsert('users',{id,name,role,pass});
     D.users.push({id,name,role,pass});
@@ -1093,7 +1339,7 @@ async function saveMeasure(){
   const ma=document.getElementById('m-alert');
   if(!name||!unit){ ma.innerHTML='<div class="alert alert-r">Vyplňte vše</div>'; return; }
   const id=name.toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,'');
-  ma.innerHTML='<div class="alert" style="background:#E6F1FB;color:#0C447C;border:0.5px solid #185FA5">Ukládám…</div>';
+  ma.innerHTML='<div class="alert" style="background:rgba(79,142,247,0.12);color:#7eb3ff;border:1px solid rgba(79,142,247,0.3)">Ukládám…</div>';
   try{
     await sbInsert('measure_types',{id,name,unit,lib});
     D.measureTypes.push({id,name,unit,lib});
@@ -1107,7 +1353,7 @@ async function saveMetricType(){
   const ma=document.getElementById('m-alert');
   if(!name||!unit){ ma.innerHTML='<div class="alert alert-r">Vyplňte vše</div>'; return; }
   const id='mt-'+name.toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,'')+'-'+Date.now();
-  ma.innerHTML='<div class="alert" style="background:#E6F1FB;color:#0C447C;border:0.5px solid #185FA5">Ukládám…</div>';
+  ma.innerHTML='<div class="alert" style="background:rgba(79,142,247,0.12);color:#7eb3ff;border:1px solid rgba(79,142,247,0.3)">Ukládám…</div>';
   try{
     await sbInsert('metric_types',{id,name,unit});
     if(!D.metricTypes) D.metricTypes=[];
@@ -1187,13 +1433,13 @@ function filterResults(){
       const b=best(r);
       const isPR=prMap[r.type]===b;
       const sessionMets=(r.metrics||[]).filter(me=>me.scope==='session');
-      const sessionHTML=sessionMets.length?sessionMets.map(me=>`<span style="display:inline-block;margin-right:4px;font-size:11px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:4px;padding:2px 6px;color:#166534"><b>${me.name}:</b> ${me.value} ${me.unit}</span>`).join(''):'';
+      const sessionHTML=sessionMets.length?sessionMets.map(me=>`<span style="display:inline-block;margin-right:4px;font-size:11px;background:var(--green-bg);border:1px solid var(--green-border);border-radius:4px;padding:2px 6px;color:var(--green)"><b>${me.name}:</b> ${me.value} ${me.unit}</span>`).join(''):'';
       return `<tr>
         <td>${fd(r.date)}</td>
         <td><span class="badge b-blue">${m?m.name:r.type}</span></td>
-        <td style="color:#666;font-size:12px">${seriesLabel(r)}</td>
+        <td style="color:var(--text3);font-size:12px">${seriesLabel(r)}</td>
         <td>${attemptsHTML(r,viewMode)}${isPR&&viewMode!=='all'?'<span class="pr-badge">PR</span>':''}</td>
-        <td style="color:#666;font-size:12px">
+        <td style="color:var(--text3);font-size:12px">
           ${sessionHTML?`<div style="margin-bottom:4px">${sessionHTML}</div>`:''}
           ${r.note||''}
         </td>
@@ -1245,7 +1491,7 @@ function buildChartConfig(groupedRecs, vals, mode, unit){
         datalabels:{
           align:'top', anchor:'top',
           font:{size:11, weight:'600'},
-          color:'#185FA5',
+          color:'#7eb3ff',
           formatter:(v,ctx)=>parseFloat(vals[ctx.dataIndex].toFixed(4))+' '+(unit||'')
         },
         tooltip:{
@@ -1277,12 +1523,12 @@ function buildChartConfig(groupedRecs, vals, mode, unit){
         y:{
           min: minY-pad,
           max: maxY+pad,
-          grid:{color:'rgba(128,128,128,0.08)'},
-          ticks:{font:{size:11}, callback:(v)=>parseFloat(v.toFixed(3))}
+          grid:{color:'rgba(255,255,255,0.06)'},
+          ticks:{font:{size:11,family:"'DM Mono',monospace"},color:'#636b85', callback:(v)=>parseFloat(v.toFixed(3))}
         },
         x:{
-          grid:{display:false},
-          ticks:{font:{size:11}}
+          grid:{display:false,color:'rgba(255,255,255,0.04)'},
+          ticks:{font:{size:11,family:"'DM Mono',monospace"},color:'#636b85'}
         }
       }
     }
@@ -1316,8 +1562,8 @@ function drawChart(){
   const {labels,lineData,options}=buildChartConfig(groupedRecs,vals,mode,recs[0]?.unit||'');
   perfChart=new Chart(ctx,{
     type:'line',
-    data:{labels,datasets:[{data:lineData.map(d=>d.y),borderColor:'#185FA5',backgroundColor:'rgba(24,95,165,0.1)',
-      pointBackgroundColor:'#185FA5',pointRadius:7,pointHoverRadius:10,tension:0,fill:true,borderWidth:2}]},
+    data:{labels,datasets:[{data:lineData.map(d=>d.y),borderColor:'#4f8ef7',backgroundColor:'rgba(79,142,247,0.15)',
+      pointBackgroundColor:'#4f8ef7',pointRadius:7,pointHoverRadius:10,tension:0,fill:true,borderWidth:2}]},
     options
   });
   document.getElementById('chart-note').innerHTML='';
@@ -1379,8 +1625,8 @@ function drawCoachChart(){
   const {labels,lineData,options}=buildChartConfig(groupedRecs,vals,mode,recs[0]?.unit||'');
   coachPerfChart=new Chart(canvas.getContext('2d'),{
     type:'line',
-    data:{labels,datasets:[{data:lineData.map(d=>d.y),borderColor:'#185FA5',backgroundColor:'rgba(24,95,165,0.1)',
-      pointBackgroundColor:'#185FA5',pointRadius:7,pointHoverRadius:10,tension:0,fill:true,borderWidth:2}]},
+    data:{labels,datasets:[{data:lineData.map(d=>d.y),borderColor:'#4f8ef7',backgroundColor:'rgba(79,142,247,0.15)',
+      pointBackgroundColor:'#4f8ef7',pointRadius:7,pointHoverRadius:10,tension:0,fill:true,borderWidth:2}]},
     options
   });
 }
@@ -1455,7 +1701,7 @@ async function athSaveRec(){
   if(!date||!type||!unit||attempts.length===0){
     aa.innerHTML='<div class="alert alert-r">Vyplňte všechna povinná pole a alespoň jeden pokus</div>'; return;
   }
-  aa.innerHTML='<div class="alert" style="background:#E6F1FB;color:#0C447C;border:0.5px solid #185FA5">Ukládám…</div>';
+  aa.innerHTML='<div class="alert" style="background:rgba(79,142,247,0.12);color:#7eb3ff;border:1px solid rgba(79,142,247,0.3)">Ukládám…</div>';
   const athSeriesData=collectSeries('ath');
   let athAttempts=[], ath_metrics=[];
   if(athSeriesData){
