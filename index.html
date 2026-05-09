@@ -785,12 +785,6 @@ async function saveRec(){
   const type=document.getElementById('f-type').value;
   const unit=document.getElementById('f-unit').value.trim();
   const note=document.getElementById('f-note').value.trim();
-
-  const aa=document.getElementById('add-alert');
-  if(!ath||!date||!type||!unit||attempts.length===0){
-    aa.innerHTML='<div class="alert alert-r">Vyplňte všechna povinná pole a alespoň jeden pokus</div>'; return;
-  }
-  aa.innerHTML='<div class="alert" style="background:#E6F1FB;color:#0C447C;border:0.5px solid #185FA5">Ukládám…</div>';
   const seriesData=collectSeries('coach');
   let attempts=[], metrics=[];
   if(seriesData){
@@ -799,6 +793,11 @@ async function saveRec(){
   } else {
     document.querySelectorAll('#cv-add .attempt-val').forEach(inp=>{ const v=parseFloat(inp.value); if(!isNaN(v)) attempts.push(v); });
   }
+  const aa=document.getElementById('add-alert');
+  if(!ath||!date||!type||!unit||attempts.length===0){
+    aa.innerHTML='<div class="alert alert-r">Vyplňte všechna povinná pole a alespoň jeden pokus</div>'; return;
+  }
+  aa.innerHTML='<div class="alert" style="background:#E6F1FB;color:#0C447C;border:0.5px solid #185FA5">Ukládám…</div>';
   const rec={id:'r'+Date.now(),ath,type,attempts,unit,date,note,metrics,series:seriesData};
   try{
     await sbInsert('records',{...rec,series:rec.series?JSON.stringify(rec.series):null});
