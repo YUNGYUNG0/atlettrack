@@ -1234,11 +1234,10 @@ function buildChartConfig(groupedRecs, vals, mode, unit){
   const minY=Math.min(...vals);
   const maxY=Math.max(...vals);
   const pad=(maxY-minY)*0.2||0.1;
-  const n=groupedRecs.length;
-  // X = index 0..n-1, evenly spaced
-  const lineData=groupedRecs.map((r,i)=>({x:i, y:vals[i], gi:i}));
+  const labels=groupedRecs.map(r=>fd(r.date));
   return {
-    scatterData: lineData,
+    labels,
+    lineData: vals.map((y,i)=>({y, gi:i})),
     options:{
       responsive:true, maintainAspectRatio:false,
       plugins:{
@@ -1247,13 +1246,13 @@ function buildChartConfig(groupedRecs, vals, mode, unit){
           align:'top', anchor:'top',
           font:{size:11, weight:'600'},
           color:'#185FA5',
-          formatter:(v)=>parseFloat(v.y.toFixed(4))+' '+(unit||'')
+          formatter:(v,ctx)=>parseFloat(vals[ctx.dataIndex].toFixed(4))+' '+(unit||'')
         },
         tooltip:{
           callbacks:{
-            title:(items)=>fd(groupedRecs[items[0].raw.gi].date),
+            title:(items)=>fd(groupedRecs[items[0].dataIndex].date),
             label:(c)=>{
-              const r=groupedRecs[c.raw.gi];
+              const r=groupedRecs[c.dataIndex];
               const lines=[];
               const allAtts=getAllAttempts(r);
               allAtts.forEach((v,i)=>{
@@ -1282,18 +1281,8 @@ function buildChartConfig(groupedRecs, vals, mode, unit){
           ticks:{font:{size:11}, callback:(v)=>parseFloat(v.toFixed(3))}
         },
         x:{
-          type:'linear',
-          min: -0.5,
-          max: n>1 ? n-0.5 : 0.5,
           grid:{display:false},
-          ticks:{
-            font:{size:11},
-            stepSize:1,
-            callback:(v)=>{
-              const i=Math.round(v);
-              return (i>=0&&i<n) ? fd(groupedRecs[i].date) : '';
-            }
-          }
+          ticks:{font:{size:11}}
         }
       }
     }
@@ -1324,11 +1313,11 @@ function drawChart(){
   const vals=grouped.map(g=>g.val);
   if(perfChart){perfChart.destroy();perfChart=null;}
   const ctx=document.getElementById('perf-chart').getContext('2d');
-  const {scatterData,options}=buildChartConfig(groupedRecs,vals,mode,recs[0]?.unit||'');
+  const {labels,lineData,options}=buildChartConfig(groupedRecs,vals,mode,recs[0]?.unit||'');
   perfChart=new Chart(ctx,{
-    type:'scatter',
-    data:{datasets:[{data:scatterData,borderColor:'#185FA5',backgroundColor:'rgba(24,95,165,0.1)',
-      pointBackgroundColor:'#185FA5',pointRadius:7,pointHoverRadius:10,showLine:true,tension:0,fill:true,borderWidth:2}]},
+    type:'line',
+    data:{labels,datasets:[{data:lineData.map(d=>d.y),borderColor:'#185FA5',backgroundColor:'rgba(24,95,165,0.1)',
+      pointBackgroundColor:'#185FA5',pointRadius:7,pointHoverRadius:10,tension:0,fill:true,borderWidth:2}]},
     options
   });
   document.getElementById('chart-note').innerHTML='';
@@ -1387,11 +1376,11 @@ function drawCoachChart(){
   if(coachPerfChart){coachPerfChart.destroy();coachPerfChart=null;}
   const canvas=document.getElementById('coach-perf-chart');
   if(!canvas) return;
-  const {scatterData,options}=buildChartConfig(groupedRecs,vals,mode,recs[0]?.unit||'');
+  const {labels,lineData,options}=buildChartConfig(groupedRecs,vals,mode,recs[0]?.unit||'');
   coachPerfChart=new Chart(canvas.getContext('2d'),{
-    type:'scatter',
-    data:{datasets:[{data:scatterData,borderColor:'#185FA5',backgroundColor:'rgba(24,95,165,0.1)',
-      pointBackgroundColor:'#185FA5',pointRadius:7,pointHoverRadius:10,showLine:true,tension:0,fill:true,borderWidth:2}]},
+    type:'line',
+    data:{labels,datasets:[{data:lineData.map(d=>d.y),borderColor:'#185FA5',backgroundColor:'rgba(24,95,165,0.1)',
+      pointBackgroundColor:'#185FA5',pointRadius:7,pointHoverRadius:10,tension:0,fill:true,borderWidth:2}]},
     options
   });
 }
